@@ -1,0 +1,76 @@
+<html><body>
+<div id="sf_StudentListArea">
+  <div id="sf_StudentLabel"> PAT SAMPLE </div>
+  <div id="sf_StudentList" role="listbox">
+    <a role="option" data-nameid="0">All Students</a><a role="option" data-nameid="2001">PAT SAMPLE</a>
+  </div>
+</div>
+<div id="sf_message" class="sf_DialogWrap sf_dialog sf_message" style="width:200px;display:block">
+  <a class="sf_DialogClose" style="display:none" href="#"> </a>
+  <div class="sf_DialogHtml">Please Wait...</div>
+</div>
+<div id="missingAssignmentsModuleWrapper"><table id="grid_missingAssignmentsModule_2001"><tbody>
+  <tr><td>SAMPLE MATH</td><td><a id="showAssignmentInfo" name="showAssignmentInfo" data-sid="2001" data-aid="504" href="#">Homework 5</a></td><td>11/06/2026</td></tr>
+</tbody></table></div>
+<div id="grid_stuGradesGrid_2001_045_gridWrap">
+<table id="grid_stuGradesGrid_2001_045"><tbody>
+  <tr data-rownum="1" group-parent="2001_9001_0_02"><td>
+    <table id="classDesc_2001_9001_0_02"><tbody>
+      <tr><td rowspan="3"></td><td><span class="bld classDesc"><a href="#">SAMPLE MATH</a></span></td></tr>
+      <tr><td>Period 1 (8:20 AM - 9:50 AM)</td></tr>
+      <tr><td><a href="#">Casey Teacher</a></td></tr>
+    </tbody></table>
+  </td></tr>
+  <tr data-rownum="2" group-child="2001_9001_0_02" style="display:none"><td><div class="bEw">
+    <a id="showAssignmentInfo" name="showAssignmentInfo" data-sid="2001" data-aid="501" href="#">Fractions Quiz (Part 1)</a><br>
+    <label class="sf_labelRight">Due:</label><span>11/02/2026&nbsp;&nbsp;(PR2)</span></div></td></tr>
+  <tr data-rownum="3" group-child="2001_9001_0_02" style="display:none"><td><div class="bEw">
+    <a id="showAssignmentInfo" name="showAssignmentInfo" data-sid="2001" data-aid="502" href="#">Homework 4</a><br>
+    <label class="sf_labelRight">Due:</label><span>11/05/2026&nbsp;&nbsp;(PR2)</span></div></td></tr>
+  <tr data-rownum="4" group-child="2001_9001_0_02" style="display:none"><td><div class="bEw">
+    <a id="showAssignmentInfo" name="showAssignmentInfo" data-sid="2001" data-aid="503" href="#">Project Draft</a><br>
+    <label class="sf_labelRight">Due:</label><span>11/20/2026&nbsp;&nbsp;(PR2)</span></div></td></tr>
+  <tr data-rownum="5" group-parent="2001_9002_0_03"><td>
+    <table id="classDesc_2001_9002_0_03"><tbody>
+      <tr><td rowspan="3"></td><td><span class="bld classDesc"><a href="#">SAMPLE SCIENCE</a></span></td></tr>
+      <tr><td>Period 3 (10:00 AM - 11:30 AM)</td></tr>
+      <tr><td><a href="#">Jordan Teacher</a></td></tr>
+    </tbody></table>
+  </td></tr>
+</tbody></table>
+<table id="grid_stuGradesGrid_2001_045"><tbody>
+  <tr class="gHd"><th>PR1</th><th>PR2</th><th>SM1</th></tr>
+  <tr data-rownum="1" group-parent="2001_9001_0_02">
+    <td><a data-sid="2001" data-cni="9001" data-trk="0" data-sec="02" data-lit="PR1" href="#">88</a></td>
+    <td><a data-sid="2001" data-cni="9001" data-trk="0" data-sec="02" data-lit="PR2" href="#">90</a></td>
+    <td><a data-sid="2001" data-cni="9001" data-trk="0" data-sec="02" data-lit="SM1" href="#">89</a></td>
+  </tr>
+  <tr data-rownum="2" group-child="2001_9001_0_02" style="display:none"><td></td><td><div>92</div></td><td></td></tr>
+  <tr data-rownum="3" group-child="2001_9001_0_02" style="display:none"><td></td><td><div> </div></td><td></td></tr>
+  <tr data-rownum="4" group-child="2001_9001_0_02" style="display:none"><td></td><td><div> </div></td><td></td></tr>
+  <tr data-rownum="5" group-parent="2001_9002_0_03">
+    <td><a data-sid="2001" data-cni="9002" data-trk="0" data-sec="03" data-lit="PR1" href="#">95</a></td>
+    <td><a data-sid="2001" data-cni="9002" data-trk="0" data-sec="03" data-lit="PR2" href="#"></a></td>
+    <td></td>
+  </tr>
+</tbody></table>
+</div>
+<script>
+// Stand-in for Skyward's script: clicking a grade opens a term-grade dialog.
+window.clicked = [];
+document.addEventListener('click', function (e) {
+  var a = e.target.closest('a[data-lit]');
+  if (!a) return;
+  e.preventDefault();
+  window.clicked.push(a.dataset.cni + ':' + a.dataset.lit);
+  setTimeout(function () {
+    // The test puts the dialog markup (fixtures/skyward_assignment_dialog.html) here.
+    var holder = document.createElement('div');
+    holder.innerHTML = window.dialogHtml || '';
+    var d = holder.firstElementChild;
+    d.querySelector('.sf_DialogClose').addEventListener('click', function (ev) { ev.preventDefault(); d.remove(); });
+    document.body.appendChild(d);
+  }, 200);
+});
+</script>
+</body></html>

@@ -1,0 +1,9 @@
+.env
+data/*
+state/
+deploy/alerts.env
+!data/.gitkeep
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
