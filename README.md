@@ -1,293 +1,202 @@
 # Kids Gradebook Tracker
 
-Logs in to Skyward Family Access every day at **3:00 PM Central**, reads every child's
-gradebook, and saves the grades to CSV files. Runs in Docker.
+Reads each child's Skyward Family Access gradebook once a day, saves grades and
+assignments to CSV, and serves a family dashboard on your home Wi-Fi: **kids mode**
+(Creature Island) for the kids and a PIN-locked view for grown-ups. Runs in Docker on a
+Mac. Everything is plain rules: no AI calls, no running cost.
 
 ## Quick start
 
-1. Copy the settings file and add your Skyward login:
-   ```bash
-   cp .env.example .env
-   # edit .env: set SKYWARD_USERNAME and SKYWARD_PASSWORD
-   ```
-   `.env` is git-ignored. Credentials are never stored in code.
+```bash
+cp .env.example .env    # add SKYWARD_USERNAME, SKYWARD_PASSWORD and a 4-digit DASH_PARENT_PIN
+```
 
-### Run locally (easiest for debugging)
+`.env` is git-ignored; credentials never go in code.
 
-Needs [uv](https://docs.astral.sh/uv/) (`brew install uv` or
-`curl -LsSf https://astral.sh/uv/install.sh | sh`). `start.sh` installs the Python
-dependencies and Chromium on first use, and writes to `./data`.
+**Run locally** (needs [uv](https://docs.astral.sh/uv/): `brew install uv`). `start.sh`
+installs dependencies and Chromium on first use and writes to `./data` and `./state`.
 
 ```bash
-./start.sh                  # scrape once now
-HEADLESS=false ./start.sh   # same, but watch the browser
-./start.sh schedule         # run every day on SCHEDULE_CRON until Ctrl+C
-./start.sh dashboard        # rebuild the family dashboard and open it, no login
-./start.sh parse data/raw/<file>.html   # re-parse a saved page, no login
-./start.sh parse-assignments data/raw/assignments_*.html data/raw/gradebook_*.html
+./start.sh                  # scrape once now (HEADLESS=false to watch the browser)
+./start.sh serve            # dashboard at http://localhost:8787
+./start.sh schedule         # scrape daily on SCHEDULE_CRON until Ctrl+C
 ./start.sh test             # run the tests
+./start.sh dashboard        # rebuild the read-only classic page and open it
+./start.sh parse data/raw/<file>.html                    # re-parse a saved page, no login
+./start.sh parse-assignments data/raw/assignments_*.html data/raw/gradebook_*.html
 ```
 
-A one-off `./start.sh` run does not retry on failure (`MAX_RETRIES=0`) so problems show
-up right away; set `MAX_RETRIES=2` to change that.
+A one-off `./start.sh` doesn't retry on failure (`MAX_RETRIES=0`), so problems show up
+right away.
 
-### Host it at home (Mac mini, or test on a laptop first)
-
-**Step-by-step guide: [docs/MAC_MINI_SETUP.md](docs/MAC_MINI_SETUP.md)** (setup, daily
-family text alert, Docker commands, troubleshooting).
-
-One script sets everything up on a Mac with Docker Desktop:
+**Host it at home**: follow **[docs/MAC_MINI_SETUP.md](docs/MAC_MINI_SETUP.md)** (setup,
+HTTPS, daily text alert, troubleshooting). In short:
 
 ```bash
-./deploy/macmini-setup.sh
+./deploy/macmini-setup.sh   # builds and starts the containers, serves https://kids-dashboard.local
 ```
-
-It asks for your Skyward login (saved only in `.env`), sets the daily scrape to
-**3:00 PM Central**, builds and starts two containers, and registers
-**https://kids-dashboard.local** with the shared home server (the `home-server` folder next
-to this one: one Caddy on ports 80/443 that routes each `name.local` to its app, with certificates from its own private home CA, so more apps
-can share the Mac mini later):
 
 | Container | What it does |
 |---|---|
-| `scraper` | Checks Skyward once a day on `SCHEDULE_CRON`, then rebuilds the dashboard |
-| `dashboard` | Always on. Reached through the home server; also directly on `HTTP_PORT` (default 8787) |
-
-The `.local` name works on iPhone, iPad, Mac, Windows and recent Android (Pixel) while on
-your home Wi-Fi. The home server announces it with macOS's built-in Bonjour, so the
-computer's own name doesn't change. Devices that can't find `.local` names can use the
-Mac's IP address instead; the script prints both.
-
-On the Mac mini (no battery) the script also keeps it awake and restarting after a power
-cut. Also turn on Docker Desktop's "Start Docker Desktop when you sign in", automatic
-login, and keep the Mac mini's IP fixed (a DHCP reservation, or a manual IP).
-
-After testing on a laptop, run `./deploy/macmini-setup.sh --remove` there, so the laptop
-stops scraping and stops claiming the `kids-dashboard.local` name.
+| `scraper` | Checks Skyward daily on `SCHEDULE_CRON` (3:00 PM Central), then rebuilds the classic page |
+| `dashboard` | Always on, through the shared home server (Caddy, ports 80/443); also directly on `HTTP_PORT` (8787) |
 
 ```bash
-docker compose ps                                                      # what's running
-docker compose logs -f scraper                                         # watch a scrape
+docker compose ps                                                          # what's running
+docker compose logs -f scraper                                             # watch a scrape
 docker compose run --rm -e MAX_RETRIES=0 scraper python -m gradebook run   # scrape right now
-git pull && ./deploy/macmini-setup.sh                                  # update
+git pull && ./deploy/macmini-setup.sh                                      # update
 ```
 
-Port 8787 busy? `HTTP_PORT=8790 bash deploy/macmini-setup.sh`. The `.local` address
-doesn't change.
+With more than one child on the account, the scraper selects each child in turn
+(Skyward hides the gradebook under "All Students").
 
-If your district has more than one child on the account, the gradebook is read for each
-child in turn (Skyward hides it while "All Students" is selected).
+## The dashboard
 
-## What you get (in `./data`)
+### Kids mode (`/`)
 
-| File | What it is |
+Each child taps their picture on the opening screen.
+
+- **Tonight's quests**: this term's missing work plus anything due today or tomorrow.
+  **I did it!** marks it done (it turns gold when Skyward shows a score).
+  **Can't do this?** asks a grown-up to write it off.
+- **The island**: one creature per class showing the grade now and the change since the
+  last check (`DASH_TREND_DAYS`, default 7). Missing work makes a creature *hungry* or
+  *sleepy* (`KIDS_MOODS`), never sad. Creatures hatch and grow with stars.
+- **New grades**, **Top subjects** with a Comeback Kid, **My progress** charts per class,
+  an **I'm done for tonight** recap, and a weekly **Friday Show**.
+- **Team star bank**: one golden bar both kids fill (1 star per graded item, +1 for 90+).
+  Grown-ups set the rewards (default 100 = Pizza night, 200 = Netflix House).
+- **Profiles**: name, character or photo, and color; kids can swap and name creatures.
+
+The kids are never compared with each other.
+
+### Grown-up view (PIN)
+
+Tap **Grown-ups** on the opening screen and enter `DASH_PARENT_PIN` (4 digits; 1234 if
+unset). Five wrong tries lock the keypad for 5 minutes; a session lasts 12 hours.
+
+- Write-off requests to approve, and "I did it!" taps still waiting for a score
+- **Written off** log with undo, so nothing gets lost
+- Rewards: edit levels, cash in, start a new season
+- Per child: where they're lagging, every class with drill-down to each assignment, and
+  grade charts across progress reports and quarters
+- The older dashboard at **`/classic`**
+
+Lagging alerts are fixed rules in `gradebook/dashboard/rules.py`:
+
+| Alert | Default rule | Setting |
+|---|---|---|
+| Failing | class grade below 70 | `DASH_FAILING_BELOW` |
+| Below a B | class grade below 80 | `DASH_WATCH_BELOW` |
+| Doing well | class grade 90+ | `DASH_STRONG_AT` |
+| Dropped | 10+ points below last quarter | `DASH_DROP_POINTS` |
+| Tests vs daily work | averages 10+ points apart | `DASH_GAP_POINTS` |
+
+**Write-offs** remove an item from quests, counts, averages and alerts (Skyward's own
+grade doesn't change). Teacher-marked "Excused" items are treated the same way
+automatically. Weekly teacher-scored items (participation and the like) are hidden;
+change the pattern with `DASH_TEACHER_SCORED`.
+
+**Daily family text**: `deploy/send-alerts.sh` sends it from the Mac through Messages,
+in the creatures' voices ("Bruno 🐻 is snoozing 💤 Mile (PE) is past due. Turn it in and
+Bruno wakes up!"). It skips quiet days and items already tapped or asked about. Preview
+with `bash deploy/send-alerts.sh --dry-run`.
+
+Skyward can't tell "not turned in" from "not graded yet", so past due can include work
+the teacher hasn't graded. The page notes when data is 2+ days old. Don't expose the
+dashboard to the internet.
+
+## Data
+
+| Path | What it is |
 |---|---|
-| `grades_latest.csv` | The most recent run |
-| `snapshots/grades_YYYY-MM-DD.csv` | One file per day |
-| `grades_history.csv` | Every run appended, for tracking changes over time |
-| `assignments_latest.csv` (and snapshot / history) | Assignments, see below |
-| `raw/gradebook_*.html` | Copy of each child's gradebook page (turn off with `SAVE_RAW_HTML=false`) |
-| `raw/assignments_*.html` | Copy of each term-grade popup |
-| `site/index.html` | The family dashboard, rebuilt after every run |
-| `../state/writeoffs.json` | Items you wrote off (kept separate, never overwritten by a scrape) |
-| `debug/failure_*` | Screenshot + HTML when a run fails |
+| `data/grades_latest.csv`, `grades_history.csv`, `snapshots/grades_<date>.csv` | Grades: latest run, every run, one file per day |
+| `data/assignments_*` | Assignments, same three forms |
+| `data/raw/*.html` | Saved Skyward pages, for re-parsing (`SAVE_RAW_HTML`) |
+| `data/site/index.html` | Read-only classic dashboard |
+| `data/debug/failure_*` | Screenshot and HTML when a run fails |
+| `state/family.json` | Kids' taps, requests, profiles, creatures, rewards |
+| `state/writeoffs.json` | Written-off items |
 
-Columns: `scraped_at, student, student_id, course, course_id, period, teacher, term, grade, source`.
-One row per student, course and grading term (e.g. PR1, Q1, S1).
+`state/` is never touched by a scrape and survives Docker rebuilds.
 
-### Assignments
+**Grades**: one row per student, course and term (PR1, Q1, S1...):
+`scraped_at, student, student_id, course, course_id, period, teacher, term, grade, source`.
 
-With `FETCH_ASSIGNMENTS=true` (the default) each run also saves assignments, in the same
-three forms: `assignments_latest.csv`, `snapshots/assignments_YYYY-MM-DD.csv` and
-`assignments_history.csv`.
-
-For each course the run clicks the **latest grading term that has a grade** (skipping
-semester, exam and final columns), which opens Skyward's term-grade popup listing every
-assignment in that term. It pauses `ASSIGNMENT_DELAY_SECONDS` (default 1.5) between
-courses. Older assignments that Skyward shows on the main gradebook page are added too
-(`detail_source` = `gradebook`; these have no category or points).
-
-Columns: `scraped_at, student, student_id, course, course_id, term, category, assignment,
+**Assignments** (`FETCH_ASSIGNMENTS=true`): for each course the scraper opens the latest
+graded term's popup, pausing `ASSIGNMENT_DELAY_SECONDS` between courses. Older items from
+the main page are added with `detail_source=gradebook`.
+`scraped_at, student, student_id, course, course_id, term, category, assignment,
 assignment_id, due_date, score, points_earned, points_possible, flags, status,
 detail_source, notes, source`.
 
-`status` is worked out like this:
-
-| status | meaning |
+| `status` | Meaning |
 |---|---|
-| `missing` | Skyward marks it Missing (popup column, or the page's Missing Assignments box) |
-| `exempt` | marked No Count / exempt and has no score, or the teacher marked it Excused |
-| `done` | has a score (including 0) |
-| `not_yet_due` | no score, due today or later |
-| `not_turned_in` | no score and the due date has passed, but Skyward has not marked it missing. Often it just has not been graded yet |
+| `done` | Has a score (including 0) |
+| `missing` | Skyward marks it Missing |
+| `not_turned_in` | No score, past due, not marked missing (often just not graded yet) |
+| `not_yet_due` | No score, due today or later |
+| `exempt` | No Count with no score, or Excused |
 
-`flags` lists what Skyward marked: `missing`, `no count`, `absent`, `late`, `exempt`,
-and `excused` when a teacher's special code or comment says Excused. `notes` holds those
-special codes and comments as text. (Adding a column rewrites `assignments_history.csv`
-once with the new header; old rows get a blank.)
-Each popup is saved as `raw/assignments_<date>_<student>_<course>_<section>_<term>.html`.
-
-## Kids mode (the front page)
-
-Open the dashboard and you land on **Creature Island**: each child taps their own
-picture, and the grown-up view sits behind a 4-digit PIN (`DASH_PARENT_PIN`). Same
-plain rules as below, no AI.
-
-- **Tonight's quests**: missing work this term and anything due today or tomorrow.
-  **I did it!** marks it done; it turns gold once Skyward shows a score.
-  **Can't do this?** asks a grown-up to write it off.
-- **The island**: one creature per class with the grade now and an arrow showing the change
-  since the last check (`DASH_TREND_DAYS`, default 7). Missing work makes a creature
-  *hungry* or *sleepy* (`KIDS_MOODS`), never sad. Creatures hatch and grow with stars.
-- **New grades**, **Top subjects** with a Comeback Kid, **My progress** charts per class,
-  **I'm done for tonight** recap with confetti, and a **Friday Show** of the week.
-- **Team star bank**: one golden bar both kids fill together. Grown-ups set the reward
-  levels (default 100 stars = Pizza night, 200 = Netflix House) and start a new season.
-- **Profiles**: each kid picks a name, a character or their own photo, and a color.
-  Kids can swap and name their creatures.
-- **Grown-ups** (button on the picker screen only): write-off requests to approve, "I did it!"
-  taps still waiting, the written-off log, rewards, where each child is lagging, every
-  class with drill-down to each assignment, and charts at every report. The older
-  dashboard is still there at `/classic`.
-
-- **The daily family text** is in the creatures' voices too ("Bruno 🐻 is snoozing 💤 Mile (PE)
-  is past due. Turn it in and Bruno wakes up!"), using the names the kids gave them. Items a
-  kid tapped "I did it!" on or asked to write off are left out. Preview it with
-  `bash deploy/send-alerts.sh --dry-run`.
-
-Kids never see each other's numbers side by side. Everything the family taps is saved in
-`state/family.json` (approved write-offs in `state/writeoffs.json`), so it's shared across
-the kids' devices and a new scrape never wipes it.
-
-## Family dashboard (classic, at /classic)
-
-After every run the app writes **`data/site/index.html`**, one page for the whole family:
-
-- **Tonight's focus** (for the kids): a badge on each child's avatar. Green ✓ means all
-  clear, amber means something is due by tomorrow, red means something is past due, with
-  their top 3 things to do first.
-- **This week at a glance**, and an **open work** list across all classes with
-  Past due / Today / 1D / 2D / 1W / 2W filters.
-- **Where they're lagging** (for parents): plain-language alerts and a table per class
-  (grade, change from last quarter, progress-report trend, test vs daily-work average,
-  zeros, past due).
-- **On time vs missed** by week.
-
-It costs nothing to run: there are no AI or model calls. The alerts are fixed rules in
-`gradebook/dashboard/rules.py`:
-
-| Alert | Rule (default) | Setting |
-|---|---|---|
-| Failing (red) | class grade below 70 | `DASH_FAILING_BELOW` |
-| Dropped (amber) | 2nd quarter 10+ points below the 1st | `DASH_DROP_POINTS` |
-| Below a B (amber) | class grade below 80 | `DASH_WATCH_BELOW` |
-| Doing well (green) | class grade 90 or more | `DASH_STRONG_AT` |
-| "Understanding" vs "effort" | test average and daily-work average 10+ points apart | `DASH_GAP_POINTS` |
-
-Weekly items the teacher scores (participation, good character, rehearsal) are hidden from
-the lists by default; change the pattern with `DASH_TEACHER_SCORED`.
-
-**Excused work.** When a teacher marks an assignment "Excused" (the small info icon in
-Skyward), it's saved with flag `excused`, status `exempt`, and never counts as a zero or as
-past due. Teacher comments ("Turned in late.", "Missing- complete for homework") are kept in
-the `notes` column and shown under each item.
-
-**Writing items off.** Some old work can't be made up. Press **Write off** on a past-due or
-zero item, pick why (Turned in, Excused, Cannot be completed, Other) and add an optional
-comment. It drops out of Tonight's focus, every count, the averages and the alerts.
-Write-offs are saved in `state/writeoffs.json` (outside `data/`), so a new scrape never
-brings them back. The **Written off** filter lists them with a **Restore** button.
-Skyward's own class grade can't change, so the "Now" column still shows Skyward's number.
-
-**See it:**
-
-```bash
-./start.sh serve            # http://localhost:8787: kids mode; grown-ups at /classic after the PIN
-./start.sh dashboard        # read-only copy in data/site/index.html (no buttons), opens it
-./deploy/macmini-setup.sh   # serves it at https://kids-dashboard.local for phones on your Wi-Fi
-```
-
-In Docker, `./state` is mounted as a volume, so write-offs and the family's choices survive
-restarts and rebuilds. Writing items off needs the grown-up PIN (five wrong tries lock the
-keypad for 5 minutes). Kids can tap "I did it!" and ask without it. Don't expose that port
-to the internet.
-
-**Ports.** Ports 80 and 443 belong to the home server. Docker publishes the dashboard directly on
-`HTTP_PORT` (default 8787). `./start.sh serve` uses `DASHBOARD_PORT` (default 8787) or
-`--port 9000`.
-
-The page shows when Skyward was last checked, and turns amber if that was 2+ days ago.
-Skyward can't tell "not turned in" from "turned in, not graded yet", so "past due"
-can include work the teacher hasn't graded.
+`flags` lists Skyward's marks (`missing`, `no count`, `absent`, `late`, `exempt`,
+`excused`); `notes` keeps teacher comments.
 
 ## Settings (`.env`)
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SKYWARD_URL` | — | Family Access login page |
-| `SKYWARD_USERNAME` / `SKYWARD_PASSWORD` | — | Your login |
-| `SCHEDULE_CRON` | `0 15 * * *` | When to run (cron format) |
-| `TZ` | `America/Chicago` | Time zone for the schedule (handles daylight saving) |
-| `RUN_ON_START` | `false` | Also run as soon as the container starts |
-| `FETCH_ASSIGNMENTS` | `true` | Also read assignments (one popup per course) |
-| `ASSIGNMENT_DELAY_SECONDS` | `1.5` | Pause between popups, to go easy on Skyward |
-| `MAX_RETRIES` / `RETRY_DELAY_MINUTES` | `2` / `10` | Retries if Skyward is down. A rejected password is never retried, to avoid locking your account |
+| `SKYWARD_URL`, `SKYWARD_USERNAME`, `SKYWARD_PASSWORD` | | Family Access login |
+| `SCHEDULE_CRON` / `TZ` | `0 15 * * *` / `America/Chicago` | When to scrape |
+| `RUN_ON_START` | `false` | Also scrape when the container starts |
+| `FETCH_ASSIGNMENTS` / `ASSIGNMENT_DELAY_SECONDS` | `true` / `1.5` | Read assignments, gently |
+| `SAVE_RAW_HTML` | `true` | Keep copies of Skyward pages |
+| `MAX_RETRIES` / `RETRY_DELAY_MINUTES` | `2` / `10` | Retries when Skyward is down. A rejected password is never retried, to avoid lockout |
+| `DASH_PARENT_PIN` | `1234` | 4-digit grown-up PIN |
+| `KIDS_MOODS` | by grade | e.g. `Dithya=hungry,Manya=sleepy` (default: hungry for 5th grade and below) |
+| `DASH_TREND_DAYS` | `7` | How far back the creature arrows compare |
+| `DASH_*` thresholds | see table above | Lagging alert rules |
+| `HTTP_PORT` / `DASHBOARD_PORT` | `8787` | Direct port in Docker / for `./start.sh serve` |
+| `ALERT_DUE_DAYS` / `ALERT_LINK` | `2` / `https://kids-dashboard.local` | Daily text: days ahead, link at the end |
+| `LOG_LEVEL` | `INFO` | Logging |
 
 ## If a run finds no grades
 
-Skyward pages vary a little by district. If a run logs in but finds no grades, look at
-`data/debug/` and `data/raw/`. The page selectors live at the top of
-`gradebook/sources/skyward.py`, and you can re-test the parser on a saved page without
-logging in again:
+Check `data/debug/` and `data/raw/`. Page selectors are at the top of
+`gradebook/sources/skyward.py`; re-test the parser on a saved page with
+`./start.sh parse data/raw/<file>.html` (no login).
 
-```bash
-./start.sh parse data/raw/<file>.html
-# or: docker compose run --rm scraper python -m gradebook parse data/raw/<file>.html
-```
-
-## Project layout (built to extend)
+## Project layout
 
 ```
 gradebook/
-  config.py            settings from env / .env
-  models.py            GradeRecord: the one shape every part shares
-  pipeline.py          one run: sources -> stores, with retries
-  scheduler.py         daily cron schedule (APScheduler)
-  sources/             where grades come from
-    base.py            GradeSource interface
-    skyward.py         browser login + navigation (Playwright)
-    skyward_parser.py  HTML -> GradeRecords (unit tested)
-    skyward_assignments_parser.py  HTML -> AssignmentRecords (unit tested)
-  dashboard/           family dashboard (data/site/index.html)
-    rules.py           the alert rules and thresholds (plain Python, no AI)
-    build.py           CSVs -> metrics -> page
-    template.html      the page itself
-    writeoffs.py       write-off list (state/writeoffs.json)
-    kids.py            kids mode data: subjects, creatures, trends, assignments
-    kids.html          kids mode page (Creature Island and the grown-up view)
-    family.py          the family's taps: claims, asks, profiles, creatures, rewards (state/family.json)
-    server.py          small web server: kids mode, /classic, and the API (standard library only)
-  storage/             where grades go
-    base.py            GradeStore interface
-    csv_store.py       CSV files (grades and assignments)
-tests/                 parser and CSV tests with a made-up sample page
+  config.py, models.py   settings; the shared record shapes
+  pipeline.py            one run: sources -> stores (with retries) -> classic page
+  scheduler.py           daily schedule
+  sources/               Skyward login, navigation and HTML parsers (Playwright)
+  storage/               CSV files
+  dashboard/
+    server.py            web server and API (standard library only)
+    kids.py, kids.html   kids mode data and page (also the grown-up view)
+    family.py            state/family.json
+    writeoffs.py         state/writeoffs.json
+    rules.py             alert rules and thresholds
+    alerts.py            daily family text
+    build.py, template.html   classic dashboard
+deploy/                  Mac mini setup and the Messages alert
+tests/                   pytest, with made-up sample data
 ```
 
-To add something new, write a class that implements `GradeSource` (e.g. assignments,
-attendance) or `GradeStore` (e.g. SQLite, Google Sheets, email alerts) and register it in
-`pipeline.py`.
+To add a source (attendance) or store (SQLite, Sheets), implement `GradeSource` or
+`GradeStore` and register it in `pipeline.py`.
 
 ## Development
 
-This is a [uv](https://docs.astral.sh/uv/) project: dependencies are pinned in
-`pyproject.toml` and locked in `uv.lock`.
-
 ```bash
-uv sync                          # create .venv with app + dev dependencies
-uv run playwright install chromium
+uv sync && uv run playwright install chromium
 uv run pytest
-uv add <package>                 # add a dependency (updates uv.lock)
+uv add <package>          # updates uv.lock
 ```
 
-Keep the `playwright` version in `pyproject.toml` the same as the Playwright image tag in
-the `Dockerfile`. The Docker image installs with `uv sync --frozen --no-dev`.
+Keep the `playwright` version in `pyproject.toml` equal to the Playwright image tag in
+the `Dockerfile`.
