@@ -131,7 +131,9 @@ def test_writeoffs_persist_and_leave_metrics(tmp_path):
 
 
 def test_server_writes_off_and_serves_page(tmp_path):
+    """The kids app is the front door; the classic page and write-offs need the grown-up PIN."""
     import threading
+    import urllib.error
     import urllib.request
     from http.server import ThreadingHTTPServer
 
@@ -141,16 +143,37 @@ def test_server_writes_off_and_serves_page(tmp_path):
     data.mkdir()
     _write(data / "grades_latest.csv", [_g("MATH 7", "2ND", "62")])
     _write(data / "assignments_latest.csv", [_a("MATH 7", "HW 1", "2026-11-05")])
-    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(data, state, Rules()))
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(data, state, Rules(), pin="2468"))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{srv.server_address[1]}"
+
+    def post(path, body, cookie=""):
+        req = urllib.request.Request(base + path, data=json.dumps(body).encode(), method="POST",
+                                     headers={"Content-Type": "application/json", "Cookie": cookie})
+        return urllib.request.urlopen(req)
+
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+
     try:
         page = urllib.request.urlopen(base + "/").read().decode()
-        assert '"interactive":true' in page
-        req = urllib.request.Request(base + "/api/writeoffs", data=json.dumps({"key": "1:HW 1"}).encode(),
-                                     headers={"Content-Type": "application/json"}, method="POST")
-        assert json.loads(urllib.request.urlopen(req).read())["count"] == 1
-        assert '"wo":true' in urllib.request.urlopen(base + "/").read().decode()
+        assert "Creature Island" in page and "__KIDS_DATA__" not in page
+        try:
+            urllib.request.build_opener(NoRedirect).open(base + "/classic")
+            raise AssertionError("classic page should need the PIN")
+        except urllib.error.HTTPError as e:
+            assert e.code == 302
+        try:
+            post("/api/writeoffs", {"key": "1:HW 1"})
+            raise AssertionError("write-offs should need the PIN")
+        except urllib.error.HTTPError as e:
+            assert e.code == 403
+        res = post("/api/parent/unlock", {"pin": "2468"})
+        cookie = res.headers["Set-Cookie"].split(";")[0]
+        assert json.loads(post("/api/writeoffs", {"key": "1:HW 1"}, cookie).read())["count"] == 1
+        req = urllib.request.Request(base + "/classic", headers={"Cookie": cookie})
+        assert '"wo":true' in urllib.request.urlopen(req).read().decode()
     finally:
         srv.shutdown()
 
@@ -181,9 +204,9 @@ def test_alert_text(tmp_path):
     ])
     writeoffs.add(state, "1:HW 2", {"reason": "cannot_complete"})
     text = alert_text(data, state, Rules(), today=TODAY, due_days=2, url="http://x.local")
-    assert "Quiz 3 (Math 7) due tomorrow" in text
-    assert "Project" not in text and "Participation" not in text
-    assert "1 past due with no score" in text
+    assert "Hoot 🦉 says: Quiz 3 (Math) is due tomorrow." in text
+    assert "Project" not in text and "Participation" not in text and "HW 2" not in text
+    assert "Hoot 🦉 is snoozing 💤 HW 1 (Math) is past due. Turn it in and Hoot wakes up!" in text
     assert text.endswith("http://x.local")
 
 

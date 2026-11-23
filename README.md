@@ -43,18 +43,20 @@ One script sets everything up on a Mac with Docker Desktop:
 ```
 
 It asks for your Skyward login (saved only in `.env`), sets the daily scrape to
-**3:00 PM Central**, builds and starts two containers, and announces
-**http://kids-dashboard.local** on your home network:
+**3:00 PM Central**, builds and starts two containers, and registers
+**https://kids-dashboard.local** with the shared home server (the `home-server` folder next
+to this one: one Caddy on ports 80/443 that routes each `name.local` to its app, with certificates from its own private home CA, so more apps
+can share the Mac mini later):
 
 | Container | What it does |
 |---|---|
 | `scraper` | Checks Skyward once a day on `SCHEDULE_CRON`, then rebuilds the dashboard |
-| `dashboard` | Always on. Serves the page on `HTTP_PORT` (default 80) |
+| `dashboard` | Always on. Reached through the home server; also directly on `HTTP_PORT` (default 8787) |
 
 The `.local` name works on iPhone, iPad, Mac, Windows and recent Android (Pixel) while on
-your home Wi-Fi. It comes from a small LaunchAgent (`deploy/mdns-advertise.sh`, using
-macOS's built-in Bonjour), so the computer's own name doesn't change. Devices that can't
-find `.local` names can use the Mac's IP address instead; the script prints both.
+your home Wi-Fi. The home server announces it with macOS's built-in Bonjour, so the
+computer's own name doesn't change. Devices that can't find `.local` names can use the
+Mac's IP address instead; the script prints both.
 
 On the Mac mini (no battery) the script also keeps it awake and restarting after a power
 cut. Also turn on Docker Desktop's "Start Docker Desktop when you sign in", automatic
@@ -70,8 +72,8 @@ docker compose run --rm -e MAX_RETRIES=0 scraper python -m gradebook run   # scr
 git pull && ./deploy/macmini-setup.sh                                  # update
 ```
 
-Port 80 busy? `HTTP_PORT=8787 ./deploy/macmini-setup.sh`, then the address is
-`http://kids-dashboard.local:8787`.
+Port 8787 busy? `HTTP_PORT=8790 bash deploy/macmini-setup.sh`. The `.local` address
+doesn't change.
 
 If your district has more than one child on the account, the gradebook is read for each
 child in turn (Skyward hides it while "All Students" is selected).
@@ -125,7 +127,39 @@ special codes and comments as text. (Adding a column rewrites `assignments_histo
 once with the new header; old rows get a blank.)
 Each popup is saved as `raw/assignments_<date>_<student>_<course>_<section>_<term>.html`.
 
-## Family dashboard
+## Kids mode (the front page)
+
+Open the dashboard and you land on **Creature Island**: each child taps their own
+picture, and the grown-up view sits behind a 4-digit PIN (`DASH_PARENT_PIN`). Same
+plain rules as below, no AI.
+
+- **Tonight's quests**: missing work this term and anything due today or tomorrow.
+  **I did it!** marks it done; it turns gold once Skyward shows a score.
+  **Can't do this?** asks a grown-up to write it off.
+- **The island**: one creature per class with the grade now and an arrow showing the change
+  since the last check (`DASH_TREND_DAYS`, default 7). Missing work makes a creature
+  *hungry* or *sleepy* (`KIDS_MOODS`), never sad. Creatures hatch and grow with stars.
+- **New grades**, **Top subjects** with a Comeback Kid, **My progress** charts per class,
+  **I'm done for tonight** recap with confetti, and a **Friday Show** of the week.
+- **Team star bank**: one golden bar both kids fill together. Grown-ups set the reward
+  levels (default 100 stars = Pizza night, 200 = Netflix House) and start a new season.
+- **Profiles**: each kid picks a name, a character or their own photo, and a color.
+  Kids can swap and name their creatures.
+- **Grown-ups** (button on the picker screen only): write-off requests to approve, "I did it!"
+  taps still waiting, the written-off log, rewards, where each child is lagging, every
+  class with drill-down to each assignment, and charts at every report. The older
+  dashboard is still there at `/classic`.
+
+- **The daily family text** is in the creatures' voices too ("Bruno 🐻 is snoozing 💤 Mile (PE)
+  is past due. Turn it in and Bruno wakes up!"), using the names the kids gave them. Items a
+  kid tapped "I did it!" on or asked to write off are left out. Preview it with
+  `bash deploy/send-alerts.sh --dry-run`.
+
+Kids never see each other's numbers side by side. Everything the family taps is saved in
+`state/family.json` (approved write-offs in `state/writeoffs.json`), so it's shared across
+the kids' devices and a new scrape never wipes it.
+
+## Family dashboard (classic, at /classic)
 
 After every run the app writes **`data/site/index.html`**, one page for the whole family:
 
@@ -168,17 +202,19 @@ Skyward's own class grade can't change, so the "Now" column still shows Skyward'
 **See it:**
 
 ```bash
-./start.sh serve            # http://localhost:8787 with write-off buttons
+./start.sh serve            # http://localhost:8787: kids mode; grown-ups at /classic after the PIN
 ./start.sh dashboard        # read-only copy in data/site/index.html (no buttons), opens it
-./deploy/macmini-setup.sh   # serves it at http://kids-dashboard.local for phones on your Wi-Fi
+./deploy/macmini-setup.sh   # serves it at https://kids-dashboard.local for phones on your Wi-Fi
 ```
 
-In Docker, `./state` is mounted as a volume, so write-offs survive restarts and rebuilds.
-Anyone on your Wi-Fi who opens the page can write items off; don't expose that port to
-the internet.
+In Docker, `./state` is mounted as a volume, so write-offs and the family's choices survive
+restarts and rebuilds. Writing items off needs the grown-up PIN (five wrong tries lock the
+keypad for 5 minutes). Kids can tap "I did it!" and ask without it. Don't expose that port
+to the internet.
 
-**Ports.** Docker uses `HTTP_PORT` (default 80). `./start.sh serve` uses
-`DASHBOARD_PORT` (default 8787) or `--port 9000`.
+**Ports.** Ports 80 and 443 belong to the home server. Docker publishes the dashboard directly on
+`HTTP_PORT` (default 8787). `./start.sh serve` uses `DASHBOARD_PORT` (default 8787) or
+`--port 9000`.
 
 The page shows when Skyward was last checked, and turns amber if that was 2+ days ago.
 Skyward can't tell "not turned in" from "turned in, not graded yet", so "past due"
@@ -227,7 +263,10 @@ gradebook/
     build.py           CSVs -> metrics -> page
     template.html      the page itself
     writeoffs.py       write-off list (state/writeoffs.json)
-    server.py          small web server: the page + write-off API (standard library only)
+    kids.py            kids mode data: subjects, creatures, trends, assignments
+    kids.html          kids mode page (Creature Island and the grown-up view)
+    family.py          the family's taps: claims, asks, profiles, creatures, rewards (state/family.json)
+    server.py          small web server: kids mode, /classic, and the API (standard library only)
   storage/             where grades go
     base.py            GradeStore interface
     csv_store.py       CSV files (grades and assignments)

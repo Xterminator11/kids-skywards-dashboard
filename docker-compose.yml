@@ -1,5 +1,5 @@
-# Home hosting: `docker compose up -d --build` (or ./deploy/macmini-setup.sh, which also
-# sets up the kids-dashboard.local name). Both services restart on their own after a
+# Home hosting: `bash deploy/macmini-setup.sh` (it also registers kids-dashboard.local with
+# the shared home server in ../home-server). Both services restart on their own after a
 # reboot, as long as Docker Desktop starts at login.
 services:
   # Scrapes Skyward once a day on SCHEDULE_CRON (3:00 PM Central by default), then
@@ -19,10 +19,11 @@ services:
     # Chromium needs a bit more shared memory than Docker's 64 MB default.
     shm_size: "512mb"
 
-  # The family dashboard, always on: http://kids-dashboard.local (or this computer's IP).
-  # HTTP_PORT is the port on this computer (default 80, so no port in the address).
-  # The page is built fresh from ./data on every visit. Write-offs are saved in
-  # ./state/writeoffs.json, which survives restarts, rebuilds and new scrapes.
+  # The family dashboard, always on: http://kids-dashboard.local, through the home server's
+  # Caddy on port 80, which reaches this container as kids-dashboard:8787 on the shared
+  # "home-proxy" network. HTTP_PORT (default 8787) is a direct backup port on this computer.
+  # The page is built fresh from ./data on every visit. The family's taps and write-offs are
+  # saved in ./state (family.json, writeoffs.json), which survive restarts, rebuilds and scrapes.
   dashboard:
     image: kids-gradebook:latest
     pull_policy: never          # built by the scraper service above
@@ -36,7 +37,16 @@ services:
       - ./data:/app/data:ro
       - ./state:/app/state
     ports:
-      - "${HTTP_PORT:-80}:8787"
+      - "${HTTP_PORT:-8787}:8787"
+    networks:
+      - default
+      - home-proxy
     depends_on:
       - scraper
     restart: unless-stopped
+
+networks:
+  # Shared with the home server's Caddy. Created by deploy/macmini-setup.sh
+  # (or by hand: docker network create home-proxy).
+  home-proxy:
+    external: true

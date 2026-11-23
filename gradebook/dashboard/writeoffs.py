@@ -5,8 +5,8 @@ brings them back. Each entry is keyed by student id + assignment id:
 
     {"120121:3152510": {"student": "...", "course": "...", "assignment": "...",
                         "due_date": "2026-10-06", "reason": "excused",
-                        "comment": "Teacher said it doesn't count",
-                        "written_off_at": "2026-11-22T09:10:00"}}
+                        "comment": "Teacher said it doesn't count", "by": "parent",
+                        "requested_at": "", "written_off_at": "2026-11-22T09:10:00"}}
 """
 from __future__ import annotations
 
@@ -61,6 +61,9 @@ def add(state_dir: Path, key: str, details: dict) -> dict[str, dict]:
             **{k: str(details.get(k, ""))[:200] for k in ("student", "course", "assignment", "due_date")},
             "reason": reason if (reason := str(details.get("reason", ""))) in REASONS else "other",
             "comment": str(details.get("comment", "")).strip()[:MAX_COMMENT],
+            # "parent" (a grown-up wrote it off) or "kid" (a kid asked and a grown-up approved)
+            "by": "kid" if details.get("by") == "kid" else "parent",
+            "requested_at": str(details.get("requested_at", ""))[:40],
             "written_off_at": datetime.now().isoformat(timespec="seconds"),
         }
         _save(state_dir, data)

@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Creature Island</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+
+/* Layout: one tall phone-first column (quests, island, podium, team, finish), widening to two columns on tablets. Single pastel daytime world by choice. */
+:root{
+  color-scheme: light;
+  --sky:#E6F1FF; --sky2:#FCEFF6;
+  --ink:#3B3355; --ink-soft:#6E6688;
+  --card:#FFFFFF; --line:#E9E3F5;
+  --lav:#DCD2FA; --mint:#C8F0DC; --peach:#FFD6C2; --butter:#FFF0B3; --blush:#FFD3E4; --pool:#CDE6FF;
+  --sea:#A9D8F5; --grass:#BFEAB4; --sand:#F7E3B5;
+  --gold:#F5C542; --silver:#C9D1E3; --bronze:#E8A77C;
+  --accent:#E0558F; --accent-ink:#FFFFFF; --accent-soft:#FFE1EE;
+  --good:#3BA776; --waiting:#8A7CC9;
+  --display:"Fredoka", "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Nunito", "Segoe UI", system-ui, sans-serif;
+  --r-lg:28px; --r-md:18px; --r-sm:12px;
+}
+body.k-manya{ --accent:#2E9C8F; --accent-soft:#D9F3EE; --sky2:#EEF7F1; }
+html,body{min-height:100%}
+body{margin:0;background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 100%) fixed;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:.2px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,.spot:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:14px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* Top bar */
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hello{flex:1 1 220px;min-width:0}
+.hello h1{font-size:clamp(28px,6vw,40px);line-height:1.05}
+.hello p{margin:4px 0 0;color:var(--ink-soft);font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--card);font-weight:800;box-shadow:0 2px 0 var(--line)}
+.starchip{background:var(--butter)}
+.iconbtn{width:44px;height:44px;border-radius:50%;background:var(--card);display:grid;place-items:center;box-shadow:0 2px 0 var(--line)}
+.iconbtn svg{width:22px;height:22px}
+
+.grid{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:860px){.grid{grid-template-columns:1.05fr 1fr}.span2{grid-column:1/-1}}
+.panel{background:var(--card);border-radius:var(--r-lg);padding:20px;box-shadow:0 4px 0 var(--line);min-width:0}
+.panel h2{font-size:24px;display:flex;align-items:center;gap:10px}
+.sub{color:var(--ink-soft);margin:4px 0 14px;font-weight:600}
+
+/* Quests */
+.quests{display:flex;flex-direction:column;gap:12px}
+.quest{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r-md);background:var(--sky);transition:transform .2s}
+.quest .mini{width:56px;height:56px;flex:none}
+.quest .qt{flex:1;min-width:0}
+.quest .qt b{display:block;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+.quest .qt small{color:var(--ink-soft);font-weight:700}
+.did{flex:none;padding:12px 16px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:600;font-size:16px;box-shadow:0 4px 0 rgba(0,0,0,.12);transition:transform .1s}
+.did:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.12)}
+.quest.claimed{background:#F1EEFB}
+.quest.verified{background:#FFF6D6}
+.tag{flex:none;padding:8px 12px;border-radius:999px;font-weight:800;font-size:13px;text-align:center}
+.tag.wait{background:var(--lav);color:#4B3D8F}
+.tag.gold{background:var(--gold);color:#5A4300}
+.undo{font-size:12px;color:var(--ink-soft);text-decoration:underline;margin-left:4px}
+.empty{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--r-md);background:var(--mint)}
+.empty .mini{width:72px;height:72px;flex:none}
+details.left{margin-top:14px;border-radius:var(--r-md);background:#FAF8FF;padding:10px 14px}
+details.left summary{cursor:pointer;font-weight:800;color:var(--ink-soft)}
+details.left .quests{margin-top:10px}
+details.left .quest{background:#fff}
+
+/* Island */
+.island{position:relative;border-radius:var(--r-lg);padding:26px 14px 30px;background:
+  radial-gradient(120% 90% at 50% 55%, var(--grass) 0 54%, var(--sand) 55% 63%, var(--sea) 64% 100%);overflow:hidden}
+.island .spots{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px 8px;justify-items:center}
+.spot{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;border-radius:16px;position:relative;width:100%;max-width:140px}
+.spot:hover{background:rgba(255,255,255,.35)}
+.spot .cw{width:96px;height:96px;position:relative}
+.spot .nm{font-family:var(--display);font-weight:600;font-size:17px}
+.spot .sj{font-size:12px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.6px;text-align:center}
+.mood{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:#fff}
+.mood.low{background:#FFE7C7;color:#8A4B00}
+.mood.party{background:var(--blush);color:#8E2456}
+.mood.dance{background:var(--mint);color:#1F6B4A}
+.mood.happy{background:var(--pool);color:#235C8E}
+.mood.ready{background:var(--lav);color:#4B3D8F}
+.deco{position:absolute;pointer-events:none}
+.weeds{position:absolute;top:76px;left:50%;transform:translateX(-50%);width:120px;height:26px;pointer-events:none}
+.specials{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border-radius:var(--r-md);background:rgba(255,255,255,.7);font-weight:700}
+.specials .mini{width:54px;height:54px;flex:none}
+
+/* Podium */
+.podium{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:end;gap:8px;margin-top:6px}
+.step{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.step .cw{width:88px;height:88px}
+.block{width:100%;border-radius:14px 14px 6px 6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:8px;font-family:var(--display);font-weight:700;color:#4a3f20}
+.block .place{font-size:28px;line-height:1}
+.block .sname{font-size:13px;font-weight:600;text-align:center;padding:0 4px}
+.block .pct{font-size:15px}
+.p1 .block{background:linear-gradient(var(--gold),#EBB52A);height:120px}
+.p2 .block{background:linear-gradient(var(--silver),#B3BDD3);height:92px}
+.p3 .block{background:linear-gradient(var(--bronze),#D68F62);height:72px}
+.comeback{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px;border-radius:var(--r-md);background:var(--blush)}
+.comeback .cw{width:76px;height:76px;flex:none}
+.comeback b{font-family:var(--display);font-size:18px;font-weight:600}
+.comeback p{margin:2px 0 0;font-weight:600}
+
+/* Team */
+.team .dots{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.team .dot{width:34px;height:34px;border-radius:50%;background:var(--sky);display:grid;place-items:center;font-weight:800}
+.team .dot.on{background:var(--good);color:#fff}
+.reward{display:inline-block;padding:6px 12px;border-radius:999px;background:var(--butter);font-weight:800}
+
+/* Finish */
+.finish{display:flex;gap:12px;flex-wrap:wrap}
+.bigbtn{flex:1 1 240px;padding:18px 20px;border-radius:24px;font-family:var(--display);font-size:22px;font-weight:600;box-shadow:0 5px 0 rgba(0,0,0,.12)}
+.bigbtn.main{background:var(--accent);color:var(--accent-ink)}
+.bigbtn.show{background:var(--lav);color:#3E2F86}
+.bigbtn small{display:block;font-family:var(--body);font-size:13px;font-weight:700;opacity:.85}
+.grownups{align-self:center;display:inline-flex;align-items:center;gap:8px;color:var(--ink-soft);font-weight:800;padding:8px 14px;border-radius:999px}
+.grownups:hover{background:rgba(255,255,255,.6)}
+.demo-note{text-align:center;color:var(--ink-soft);font-size:13px;font-weight:600;max-width:60ch;margin:0 auto}
+
+/* Picker */
+.picker{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center}
+.picker h1{font-size:clamp(34px,8vw,56px)}
+.pickrow{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.pick{width:min(260px,80vw);padding:22px;border-radius:var(--r-lg);background:var(--card);box-shadow:0 6px 0 var(--line);display:flex;flex-direction:column;align-items:center;gap:8px;transition:transform .15s}
+.pick:hover{transform:translateY(-4px)}
+.pick .cw{width:130px;height:130px}
+.pick b{font-family:var(--display);font-size:28px;font-weight:600}
+
+/* Sheets / modals */
+.scrim{position:fixed;inset:0;background:rgba(59,51,85,.45);display:flex;align-items:flex-end;justify-content:center;z-index:40;
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+@media (min-width:700px){.scrim{align-items:center}}
+.sheet{background:var(--card);border-radius:var(--r-lg);width:min(560px,100%);max-height:88vh;overflow:auto;padding:22px;position:relative}
+.sheet h2{font-size:28px}
+.close{position:absolute;top:12px;right:12px}
+.bigc{width:170px;height:170px;margin:0 auto}
+.center{text-align:center}
+.bar{height:16px;border-radius:999px;background:var(--sky);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:999px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.field{flex:1 1 160px;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--line);font:inherit;font-weight:700;color:var(--ink);background:#fff}
+.btn{padding:12px 18px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:800}
+.btn.ghost{background:var(--sky);color:var(--ink)}
+.list{display:flex;flex-direction:column;gap:8px;margin:12px 0;padding:0;list-style:none}
+.list li{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--sky);font-weight:700}
+.list li .sc{margin-left:auto;font-family:var(--display);font-weight:600;white-space:nowrap}
+.stage{display:flex;justify-content:center;gap:4px;flex-wrap:wrap;margin:10px 0}
+.stage .cw{width:72px;height:72px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.fact{background:var(--sky);border-radius:14px;padding:10px;text-align:center}
+.fact b{display:block;font-family:var(--display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.fact span{font-size:12px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px}
+
+/* PIN */
+.pin{display:grid;grid-template-columns:repeat(3,64px);gap:10px;justify-content:center;margin:14px 0}
+.pin button{height:64px;border-radius:50%;background:var(--sky);font-family:var(--display);font-size:24px;font-weight:600}
+.pindots{display:flex;gap:10px;justify-content:center}
+.pindots i{width:14px;height:14px;border-radius:50%;background:var(--line)}
+.pindots i.on{background:var(--ink)}
+.parent table{width:100%;border-collapse:collapse;font-size:14px}
+.parent th,.parent td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.parent th{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}
+.tblwrap{overflow-x:auto}
+.sms{background:#E9F2FF;border-radius:18px 18px 18px 4px;padding:10px 14px;margin:8px 0;font-weight:600;max-width:46ch}
+.parent h3{font-size:18px;margin-top:18px}
+.parent ul.rules{margin:8px 0;padding-left:20px}
+
+/* Toast + confetti */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-weight:800;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px);text-align:center}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:70;width:100%;height:100%}
+
+/* Creature motion */
+.c-dance{animation:dance .7s ease-in-out infinite alternate;transform-origin:50% 90%}
+.c-party{animation:party .5s ease-in-out infinite alternate;transform-origin:50% 90%}
+.c-happy{animation:bob 2.2s ease-in-out infinite;transform-origin:50% 90%}
+.c-ready{animation:bob 1.4s ease-in-out infinite;transform-origin:50% 90%}
+.c-sleepy{animation:breathe 3.2s ease-in-out infinite;transform-origin:50% 100%}
+.c-hungry{animation:wobble 1.1s ease-in-out infinite;transform-origin:50% 90%}
+.c-egg{animation:eggwig 2.6s ease-in-out infinite;transform-origin:50% 95%}
+.c-munch{animation:munch .25s ease-in-out 5 alternate;transform-origin:50% 90%}
+.zz{animation:zz 2.4s ease-in-out infinite}
+.zz2{animation:zz 2.4s ease-in-out .8s infinite}
+.arm-l{transform-origin:28px 78px}.arm-r{transform-origin:92px 78px}
+.c-dance .arm-l,.c-party .arm-l{animation:wave .35s ease-in-out infinite alternate}
+.c-dance .arm-r,.c-party .arm-r{animation:wave2 .35s ease-in-out infinite alternate}
+@keyframes dance{from{transform:rotate(-9deg) translateY(0)}to{transform:rotate(9deg) translateY(-8px)}}
+@keyframes party{from{transform:rotate(-12deg) translateY(0) scale(1)}to{transform:rotate(12deg) translateY(-12px) scale(1.04)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.03,.97)}}
+@keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+@keyframes eggwig{0%,70%,100%{transform:rotate(0)}76%{transform:rotate(-7deg)}82%{transform:rotate(7deg)}88%{transform:rotate(-4deg)}}
+@keyframes munch{from{transform:scale(1)}to{transform:scale(1.12,.9)}}
+@keyframes zz{0%{opacity:0;transform:translate(0,0)}30%{opacity:1}100%{opacity:0;transform:translate(8px,-14px)}}
+@keyframes wave{from{transform:rotate(0)}to{transform:rotate(-40deg)}}
+@keyframes wave2{from{transform:rotate(0)}to{transform:rotate(40deg)}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ---- v2: grades, trends, progress, write-offs, parent dashboard ---- */
+.gp{display:inline-flex;align-items:center;gap:4px;font-family:var(--display);font-weight:600;font-size:15px;padding:2px 10px;border-radius:999px;background:#fff;font-variant-numeric:tabular-nums}
+.gp .ar{font-size:12px;font-weight:700}
+.up{color:#1F7A50}.down{color:#B4552B}.flat{color:#6E6688}
+.g90{background:#D7F5E5}.g80{background:#DCEBFF}.g70{background:#FFF1C2}.g0{background:#FFE1CF}
+.qlinks{display:flex;gap:6px;flex-direction:column;align-items:flex-end;flex:none}
+.cant{font-size:13px;font-weight:800;color:var(--ink-soft);text-decoration:underline;text-underline-offset:3px;padding:2px}
+.tag.ask{background:#FFE7C7;color:#8A4B00}
+.quest.asked{background:#FFF6EA}
+
+.news{display:flex;flex-direction:column;gap:8px}
+.newrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--sky);text-align:left;width:100%}
+.newrow .mini{width:44px;height:44px;flex:none}
+.newrow .tt{flex:1;min-width:0}
+.newrow .tt b{display:block;font-size:15px;line-height:1.2;overflow-wrap:anywhere}
+.newrow .tt small{color:var(--ink-soft);font-weight:700}
+.sc-chip{flex:none;min-width:48px;text-align:center;font-family:var(--display);font-weight:600;font-size:18px;padding:4px 10px;border-radius:12px;font-variant-numeric:tabular-nums}
+.newbadge{font-size:11px;font-weight:800;background:var(--accent);color:var(--accent-ink);padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:2px}
+
+.prog{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.pcard{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:var(--r-md);background:var(--sky);text-align:left;min-width:0}
+.pcard .ph{display:flex;align-items:center;gap:8px}
+.pcard .ph .mini{width:44px;height:44px;flex:none}
+.pcard .ph b{font-family:var(--display);font-weight:600;font-size:17px;line-height:1.1;flex:1;min-width:0}
+.pcard .big{font-family:var(--display);font-weight:600;font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.pcard .lbl{font-size:12px;font-weight:800;color:var(--ink-soft)}
+.pcard svg.spark{width:100%;height:56px;display:block}
+.trendline{font-size:13px;font-weight:700}
+
+.chartbox{background:#FAF9FF;border-radius:16px;padding:10px 8px 4px;margin:10px 0}
+.chartbox h4{font-family:var(--display);font-weight:600;font-size:16px;margin:0 6px 4px}
+.chartbox svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 6px 6px;font-size:12px;font-weight:800;color:var(--ink-soft)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+
+.reasons{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.reasons label{display:flex;gap:10px;align-items:center;padding:12px;border-radius:14px;background:var(--sky);font-weight:700;cursor:pointer}
+.reasons input{width:20px;height:20px;accent-color:var(--accent)}
+
+/* Parent dashboard (full screen, calmer) */
+body.parent-mode{--accent:#5B4BC4;--accent-soft:#E7E3FB;background:#F5F4FA}
+.pd{display:flex;flex-direction:column;gap:18px}
+.pd .top h1{font-size:30px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{padding:10px 16px;border-radius:999px;background:#fff;font-weight:800;box-shadow:0 2px 0 var(--line)}
+.tab[aria-selected="true"]{background:var(--ink);color:#fff}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 0 var(--line)}
+.tile b{display:block;font-family:var(--display);font-weight:600;font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px}
+.tile.warn b{color:#B4552B}
+.alerts{display:flex;flex-direction:column;gap:8px}
+.alert{display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:#fff;border-left:6px solid var(--line);font-weight:600}
+.alert.red{border-left-color:#D64545}.alert.amber{border-left-color:#E8A23A}.alert.green{border-left-color:#3BA776}
+.alert b{display:block}
+.alert small{color:var(--ink-soft);font-weight:600}
+.ptable{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.ptable th,.ptable td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.ptable th{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-soft)}
+.ptable td.num,.ptable th.num{text-align:right}
+.ptable tbody tr.click{cursor:pointer}
+.ptable tbody tr.click:hover{background:#F7F5FF}
+.ptable tr.sel{background:#EFEBFF}
+.ptable .sname{font-weight:800}
+.ptable svg{width:90px;height:26px;display:block}
+.bad{color:#B4552B;font-weight:800}.ok{color:#1F7A50;font-weight:800}
+.st{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:800}
+.st.done{background:#D7F5E5;color:#1F6B4A}.st.missing{background:#FFE1CF;color:#8A3B12}.st.future{background:#E7E3FB;color:#4B3D8F}.st.wo{background:#EDEBF2;color:#6E6688}.st.ex{background:#EDEBF2;color:#6E6688}.st.pend{background:#FFF1C2;color:#7A5A00}
+.drill{background:#fff;border-radius:var(--r-lg);padding:18px;box-shadow:0 4px 0 var(--line)}
+.drill h2{font-size:22px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.filters button{padding:6px 12px;border-radius:999px;background:var(--sky);font-weight:800;font-size:13px}
+.filters button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.mini-sel{padding:6px 8px;border-radius:10px;border:2px solid var(--line);font:inherit;font-size:13px;font-weight:700;background:#fff;color:var(--ink)}
+.sbtn{padding:6px 12px;border-radius:999px;background:var(--accent);color:#fff;font-weight:800;font-size:13px}
+.sbtn.ghost{background:var(--sky);color:var(--ink)}
+.reqs{display:flex;flex-direction:column;gap:8px}
+.req{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:#FFF6EA}
+.req .rt{flex:1 1 240px;min-width:0;font-weight:700}
+.req .rt small{display:block;color:var(--ink-soft);font-weight:600}
+.twocol{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:900px){.twocol{grid-template-columns:1fr 1fr}}
+
+.gold-wrap{position:relative;padding:4px 0 54px}
+.gold-bar{position:relative;height:28px;border-radius:999px;background:#FFF6D6;box-shadow:inset 0 2px 0 rgba(0,0,0,.06);overflow:visible}
+.gold-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(180deg,#FFE27A,#F5C542 55%,#E0A91E);box-shadow:0 0 14px rgba(245,197,66,.55);position:relative;overflow:hidden}
+.gold-bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.65) 45%,transparent 60%);animation:shine 2.8s ease-in-out infinite}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.gold-bar .mark{position:absolute;top:-4px;width:4px;height:36px;border-radius:2px;background:#D9C27A;transform:translateX(-2px)}
+.gold-bar .mark.hit{background:#B8860B}
+.gold-labels{position:absolute;left:0;right:0;top:40px}
+.glabel{position:absolute;transform:translateX(-50%);text-align:center;font-size:12px;font-weight:800;color:var(--ink-soft);white-space:nowrap;line-height:1.2}
+.glabel:last-child{transform:translateX(-100%);text-align:right}
+.glabel b{display:block;font-family:var(--display);font-size:15px;color:var(--ink)}
+.glabel.hit b{color:#B8860B}.glabel.used{opacity:.55}
+.gold-line{margin:0;font-weight:600}
+.unlock{color:#9A6B00;font-weight:800}
+
+.avatar-btn{position:relative;flex:none;border-radius:50%;box-shadow:0 3px 0 var(--line)}
+.avatar-btn .edit-dot{position:absolute;right:-6px;bottom:-4px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:800;padding:2px 7px;border-radius:999px}
+.charpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.charopt{aspect-ratio:1;border-radius:16px;background:var(--sky);padding:4px;border:3px solid transparent}
+.charopt.on{border-color:var(--accent);background:var(--accent-soft)}
+.charopt svg{width:100%;height:100%}
+.swatch{width:42px;height:42px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 2px var(--line)}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ink)}
+.field{box-sizing:border-box;max-width:100%}
+
+</style>
+</head>
+<body>
+<canvas id="confetti" hidden></canvas>
+<div class="wrap" id="app"></div>
+<div id="layer"></div>
+<script>
+/* Kids mode: creature island + grown-up view. Data comes from the server (gradebook/dashboard/kids.py);
+   every change is saved on the server (state/family.json, state/writeoffs.json). Plain rules, no AI. */
+let P = __KIDS_DATA__;
+const SPECIES={
+  owl:{name:"Hoot",color:"#CBB8F2"},axolotl:{name:"Bloop",color:"#FFC2D9"},armadillo:{name:"Dilly",color:"#F2D6A8"},
+  bunny:{name:"Pages",color:"#FFE59A"},fox:{name:"Fiddle",color:"#FFC3A0"},bear:{name:"Bruno",color:"#B9DBFF"},
+  bug:{name:"Snap",color:"#BDEBD2"},robot:{name:"Pixel",color:"#CFD8F7"},chick:{name:"Peep",color:"#FFF0A8"},
+  elephant:{name:"Trunky",color:"#C9D3E6"},monkey:{name:"Momo",color:"#E3B98F"},giraffe:{name:"Stretch",color:"#FFD98A"},
+  lion:{name:"Leo",color:"#FFCB7A"},car:{name:"Zoom",color:"#FFA3AE"},dog:{name:"Biscuit",color:"#E8CFB0"},cat:{name:"Mochi",color:"#C9C4D3"}
+};
+const LINES=["#7B5CD6","#D9487F","#B07A2A","#C99A00","#E0703A","#3C82D6","#2E9C6A","#5C6BB5","#A0522D","#008B8B"];
+const THEMES=[["berry","Berry","#E0558F"],["teal","Teal","#2E9C8F"],["grape","Grape","#7B5CD6"],["ocean","Ocean","#3C82D6"],["sunset","Sunset","#E0703A"],["leaf","Leaf","#3BA776"]];
+const TONE={
+  hungry:{fed:n=>`${n} gobbled it up! +1 star`,lowLine:n=>`${n} is hungry. Finishing this feeds it!`,hi:"Hi",bang:"!",clear:"Every creature is full tonight!",cheer:"You're so close!"},
+  sleepy:{fed:n=>`${n} woke up. +1 star`,lowLine:n=>`${n} dozed off. Turning this in wakes it up.`,hi:"Hey",bang:"",clear:"Everyone's awake. Nice.",cheer:"Almost there."}
+};
+const STAGE_NAMES=["Egg","Baby","Grown-up","Hero"],STAGE_KEYS=["egg","baby","grown","hero"];
+const REASONS_KID={turned_in:"I already turned it in (on paper or another way)",excused:"My teacher excused me",cannot_complete:"My teacher said I don't need to do it",other:"Something else"};
+const REASON_SHORT={turned_in:"Already turned in",excused:"Excused",cannot_complete:"Teacher said skip",other:"Other"};
+
+/* ---------- This device only: who is using it, sound on/off ---------- */
+const local={get(k,d){try{const v=localStorage.getItem("kids:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem("kids:"+k,JSON.stringify(v))}catch(e){}}};
+let S={kid:local.get("kid",null),muted:local.get("muted",false),view:"kid",ptab:"family",psub:null,pfilter:"all"};
+if(S.kid&&!P.kids.some(k=>k.id===S.kid))S.kid=null;
+if(location.hash==="#grownups")S.kid=null;
+
+/* ---------- Server calls ---------- */
+async function api(path,body){
+  try{const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{}),credentials:"same-origin"});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){toast(j.error||"That didn't save. Try again.");return false}
+    P=j;return true}
+  catch(e){toast("Can't reach the dashboard. Check the Wi-Fi.");return false}
+}
+
+/* ---------- Data helpers ---------- */
+const F=()=>P.family;
+const kidById=id=>P.kids.find(k=>k.id===id);
+const kid=()=>kidById(S.kid);
+const subj=(k,id)=>k.subjects.find(s=>s.id===id);
+const spOf=(k,s)=>F().creatures[k.id+":"+s.id]?.sp||s.sp;
+const cname=(k,s)=>F().creatures[k.id+":"+s.id]?.name||SPECIES[spOf(k,s)].name;
+const kidName=k=>F().profiles[k.id]?.name||k.name;
+const profOf=k=>{const i=P.kids.indexOf(k);const d={pic:{type:"char",sp:k.subjects[0]?.sp||"bunny"},theme:THEMES[i%THEMES.length][0]};return {...d,...(F().profiles[k.id]||{})}};
+const claimOf=key=>F().claims[key];
+const reqOf=key=>F().requests[key];
+const woOf=key=>P.writeoffs[key];
+const tone=k=>TONE[k.low]||TONE.sleepy;
+const D=iso=>new Date(iso+"T12:00:00");
+const DAY=864e5,d2t=iso=>D(iso).getTime();
+const addDays=(iso,n)=>new Date(d2t(iso)+n*DAY).toISOString().slice(0,10);
+const fmt=iso=>iso?D(iso).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+const esc=s=>String(s??"").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const R=n=>n==null?"–":Math.round(n);
+const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
+const lineOf=(k,s)=>LINES[k.subjects.indexOf(s)%LINES.length];
+
+const isMissing=i=>i.st==="overdue"&&!i.ts&&!woOf(i.key);
+function missingAll(k){return k.items.filter(isMissing)}
+function dueSoon(k){const lim=addDays(P.now,1);return k.items.filter(i=>i.st==="open"&&!i.ts&&!woOf(i.key)&&i.due&&i.due>=P.now&&i.due<=lim)}
+function questsOf(k){
+  const recent=addDays(P.now,-7);
+  const claimedDone=k.items.filter(i=>{const c=claimOf(i.key);return c&&c.at>=recent&&!isMissing(i)&&!dueSoon(k).includes(i)&&!woOf(i.key)});
+  return [...missingAll(k).filter(i=>i.term===k.term),...dueSoon(k),...claimedDone].sort((a,b)=>(b.due||"").localeCompare(a.due||""))}
+function leftoversOf(k){return missingAll(k).filter(i=>i.term!==k.term).sort((a,b)=>b.due.localeCompare(a.due))}
+const isOpen=i=>!claimOf(i.key)&&reqOf(i.key)?.status!=="pending";
+function openMissing(k,subId){return missingAll(k).filter(i=>i.term===k.term&&(!subId||i.sub===subId)&&isOpen(i))}
+function openQuests(k){return questsOf(k).filter(i=>(isMissing(i)||i.st==="open")&&isOpen(i))}
+const graded=(k,subId)=>k.items.filter(i=>(i.st==="done"||i.st==="zero")&&i.score!=null&&!i.ts&&(!subId||i.sub===subId)).sort((a,b)=>a.due.localeCompare(b.due));
+const verified=i=>claimOf(i.key)&&(i.st==="done"||i.st==="zero");
+function starsOf(k,s){const g=graded(k,s.id).filter(i=>i.st==="done");
+  return g.length+g.filter(i=>i.score>=90).length+k.items.filter(i=>i.sub===s.id&&claimOf(i.key)&&!verified(i)).length}
+function stageOf(stars){let n=0;P.stages.forEach((m,i)=>{if(stars>=m)n=i});return n}
+function moodOf(k,s){
+  if(openMissing(k,s.id).length) return k.low;
+  if(s.grade-s.prev>=5) return "party";
+  if(s.grade>=P.rules.strong_at) return "dance";
+  if(s.grade>=P.rules.watch_below) return "happy";
+  return "ready";
+}
+function trend(s){const d=Math.round(s.grade-s.prev);return d>=2?{c:"up",a:"▲",d}:d<=-2?{c:"down",a:"▼",d}:{c:"flat",a:"●",d:0}}
+const gcls=g=>g>=90?"g90":g>=80?"g80":g>=70?"g70":"g0";
+const since=()=>P.lastCheck?`since ${fmt(P.lastCheck)}`:"since the last check";
+function rolling(arr,n=5){return arr.map((_,i)=>{const w=arr.slice(Math.max(0,i-n+1),i+1);return w.reduce((a,x)=>a+x.score,0)/w.length})}
+const MOOD_TEXT={hungry:"Hungry",sleepy:"Sleepy",party:"Comeback!",dance:"Dancing",happy:"Happy",ready:"Training"};
+const MOOD_CLASS={hungry:"low",sleepy:"low",party:"party",dance:"dance",happy:"happy",ready:"ready"};
+
+/* Team star bank: every star both kids earn since the season started. */
+function kidSeasonStars(k){const st=F().rewards.season_start;const g=graded(k).filter(i=>i.st==="done"&&i.due>=st);
+  return g.length+g.filter(i=>i.score>=90).length+k.items.filter(i=>{const c=claimOf(i.key);return c&&c.at>=st&&!verified(i)}).length}
+const teamStars=()=>P.kids.reduce((a,k)=>a+kidSeasonStars(k),0);
+const tiers=()=>[...F().rewards.tiers].sort((a,b)=>a.stars-b.stars);
+const redeemed=st=>F().rewards.redeemed.some(r=>r.stars===st);
+function starPace(){const days=Math.max(7,(d2t(P.now)-d2t(F().rewards.season_start))/DAY);return teamStars()/days*7}
+
+/* ---------- Creature drawing (original, parametric SVG) ---------- */
+function shade(hex,p){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;
+  const f=v=>Math.max(0,Math.min(255,Math.round(p<0?v*(1+p/100):v+(255-v)*p/100)));return "#"+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,"0")).join("")}
+const INK="#3B3355";
+function eyes(m,y){
+  if(m==="dance"||m==="party") return `<path d="M39 ${y+2} Q46 ${y-7} 53 ${y+2}" stroke="${INK}" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M67 ${y+2} Q74 ${y-7} 81 ${y+2}" stroke="${INK}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  if(m==="sleepy") return `<path d="M39 ${y} Q46 ${y+6} 53 ${y}" stroke="${INK}" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M67 ${y} Q74 ${y+6} 81 ${y}" stroke="${INK}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  if(m==="hungry") return `<circle cx="46" cy="${y}" r="7.5" fill="#fff"/><circle cx="74" cy="${y}" r="7.5" fill="#fff"/><circle cx="47" cy="${y-2}" r="4.6" fill="${INK}"/><circle cx="75" cy="${y-2}" r="4.6" fill="${INK}"/><circle cx="48.5" cy="${y-3.5}" r="1.6" fill="#fff"/><circle cx="76.5" cy="${y-3.5}" r="1.6" fill="#fff"/>`;
+  const brow=m==="ready"?`<path d="M39 ${y-10} L52 ${y-7}" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><path d="M81 ${y-10} L68 ${y-7}" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`:"";
+  return brow+`<circle cx="46" cy="${y}" r="5" fill="${INK}"/><circle cx="74" cy="${y}" r="5" fill="${INK}"/><circle cx="47.6" cy="${y-1.8}" r="1.7" fill="#fff"/><circle cx="75.6" cy="${y-1.8}" r="1.7" fill="#fff"/>`;
+}
+function mouth(m,y,sp){
+  if(m==="hungry") return `<ellipse cx="60" cy="${y+2}" rx="6" ry="7" fill="#7A2E52"/><path d="M66 ${y+6} q2 6 0 8 q-2 -2 0 -8z" fill="#8FD0F2"/>`;
+  if(m==="sleepy") return `<circle cx="60" cy="${y+2}" r="2.8" fill="#7A2E52"/>`;
+  if(m==="dance"||m==="party") return `<path d="M50 ${y-1} Q60 ${y+12} 70 ${y-1} Z" fill="#7A2E52"/><path d="M55 ${y+4} Q60 ${y+8} 65 ${y+4}" fill="#F48FB1"/>`;
+  if(sp==="owl") return "";
+  if(m==="ready") return `<path d="M53 ${y+1} Q60 ${y+4} 67 ${y+1}" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  return `<path d="M52 ${y} Q60 ${y+7} 68 ${y}" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+}
+function ears(sp,c,d,l){
+  switch(sp){
+    case"owl":return `<polygon points="30,48 33,18 52,38" fill="${d}"/><polygon points="90,48 87,18 68,38" fill="${d}"/>`;
+    case"axolotl":return [-1,1].map(s=>{const x0=s<0?30:90,x1=s<0?12:108;return `<g stroke="${d}" stroke-width="7" stroke-linecap="round"><line x1="${x0}" y1="56" x2="${x1}" y2="44"/><line x1="${x0}" y1="64" x2="${x1-s*2}" y2="62"/><line x1="${x0}" y1="72" x2="${x1}" y2="80"/></g>`}).join("");
+    case"bunny":return `<ellipse cx="45" cy="24" rx="9" ry="24" fill="${c}"/><ellipse cx="75" cy="24" rx="9" ry="24" fill="${c}"/><ellipse cx="45" cy="26" rx="4.5" ry="16" fill="#FFB7CF"/><ellipse cx="75" cy="26" rx="4.5" ry="16" fill="#FFB7CF"/>`;
+    case"fox":return `<polygon points="26,54 30,14 56,38" fill="${c}"/><polygon points="94,54 90,14 64,38" fill="${c}"/><polygon points="32,46 33,24 48,38" fill="${l}"/><polygon points="88,46 87,24 72,38" fill="${l}"/>`;
+    case"bear":return `<circle cx="32" cy="42" r="13" fill="${c}"/><circle cx="88" cy="42" r="13" fill="${c}"/><circle cx="32" cy="42" r="7" fill="${l}"/><circle cx="88" cy="42" r="7" fill="${l}"/>`;
+    case"armadillo":return `<ellipse cx="34" cy="40" rx="8" ry="11" fill="${d}"/><ellipse cx="86" cy="40" rx="8" ry="11" fill="${d}"/>`;
+    case"bug":return `<path d="M50 40 Q44 22 36 14" stroke="${d}" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M70 40 Q76 22 84 14" stroke="${d}" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="36" cy="14" r="6" fill="${d}"/><circle cx="84" cy="14" r="6" fill="${d}"/>`;
+    case"robot":return `<line x1="60" y1="38" x2="60" y2="16" stroke="${d}" stroke-width="4"/><circle cx="60" cy="14" r="7" fill="#F5C542"/><rect x="18" y="62" width="9" height="14" rx="3" fill="${d}"/><rect x="93" y="62" width="9" height="14" rx="3" fill="${d}"/>`;
+    case"elephant":return `<ellipse cx="22" cy="68" rx="20" ry="24" fill="${d}"/><ellipse cx="98" cy="68" rx="20" ry="24" fill="${d}"/><ellipse cx="24" cy="68" rx="12" ry="15" fill="#FFC9DA"/><ellipse cx="96" cy="68" rx="12" ry="15" fill="#FFC9DA"/>`;
+    case"monkey":return `<circle cx="24" cy="66" r="12" fill="${d}"/><circle cx="96" cy="66" r="12" fill="${d}"/><circle cx="24" cy="66" r="6" fill="${l}"/><circle cx="96" cy="66" r="6" fill="${l}"/>`;
+    case"giraffe":return `<line x1="48" y1="42" x2="44" y2="20" stroke="${d}" stroke-width="5" stroke-linecap="round"/><line x1="72" y1="42" x2="76" y2="20" stroke="${d}" stroke-width="5" stroke-linecap="round"/><circle cx="44" cy="18" r="6" fill="#B07A2A"/><circle cx="76" cy="18" r="6" fill="#B07A2A"/><ellipse cx="30" cy="48" rx="10" ry="5" fill="${c}" transform="rotate(-25 30 48)"/><ellipse cx="90" cy="48" rx="10" ry="5" fill="${c}" transform="rotate(25 90 48)"/>`;
+    case"lion":return `<g fill="#E39A3B">${Array.from({length:14},(_,i)=>{const a=i/14*Math.PI*2;return `<circle cx="${(60+Math.cos(a)*40).toFixed(1)}" cy="${(70+Math.sin(a)*38).toFixed(1)}" r="13"/>`}).join("")}</g><circle cx="36" cy="42" r="8" fill="${c}"/><circle cx="84" cy="42" r="8" fill="${c}"/>`;
+    case"car":return `<rect x="34" y="22" width="52" height="30" rx="12" fill="${d}"/><rect x="40" y="27" width="40" height="17" rx="7" fill="#CDEBFF"/>`;
+    case"dog":return `<ellipse cx="26" cy="62" rx="11" ry="22" fill="#B98B63" transform="rotate(18 26 62)"/><ellipse cx="94" cy="62" rx="11" ry="22" fill="#B98B63" transform="rotate(-18 94 62)"/>`;
+    case"cat":return `<polygon points="28,54 32,20 54,40" fill="${c}"/><polygon points="92,54 88,20 66,40" fill="${c}"/><polygon points="33,46 34,28 46,40" fill="#FFC9DA"/><polygon points="87,46 86,28 74,40" fill="#FFC9DA"/>`;
+    case"chick":return `<ellipse cx="56" cy="34" rx="4" ry="9" fill="${d}" transform="rotate(-20 56 34)"/><ellipse cx="64" cy="33" rx="4" ry="10" fill="${d}" transform="rotate(15 64 33)"/>`;
+  }return"";
+}
+function topper(sp,d){
+  if(sp==="armadillo") return `<path d="M30 54 Q60 34 90 54" stroke="${d}" stroke-width="4" fill="none"/><path d="M28 62 Q60 42 92 62" stroke="${d}" stroke-width="3" fill="none" opacity=".6"/>`;
+  if(sp==="owl") return `<polygon points="55,73 65,73 60,81" fill="#F2A65A"/>`;
+  if(sp==="chick") return `<polygon points="54,73 66,73 60,80" fill="#F2A65A"/>`;
+  if(sp==="elephant") return `<path d="M60 70 C60 84 62 92 68 96" stroke="${d}" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  if(sp==="monkey") return `<ellipse cx="60" cy="72" rx="28" ry="22" fill="#F6E3CF"/>`;
+  if(sp==="giraffe") return `<circle cx="38" cy="94" r="5" fill="#E0A33E" opacity=".6"/><circle cx="82" cy="98" r="6" fill="#E0A33E" opacity=".6"/><circle cx="86" cy="58" r="4" fill="#E0A33E" opacity=".6"/><circle cx="32" cy="58" r="4" fill="#E0A33E" opacity=".6"/>`;
+  if(sp==="lion") return `<ellipse cx="60" cy="76" rx="6" ry="4" fill="#7A2E52"/>`;
+  if(sp==="car") return `<circle cx="36" cy="106" r="11" fill="${INK}"/><circle cx="84" cy="106" r="11" fill="${INK}"/><circle cx="36" cy="106" r="4.5" fill="#ddd"/><circle cx="84" cy="106" r="4.5" fill="#ddd"/><circle cx="26" cy="86" r="5" fill="#FFF3B0"/><circle cx="94" cy="86" r="5" fill="#FFF3B0"/>`;
+  if(sp==="dog") return `<ellipse cx="60" cy="75" rx="6" ry="4.5" fill="${INK}"/>`;
+  if(sp==="cat") return `<path d="M52 46 l2 8 M60 44 v9 M68 46 l-2 8" stroke="${d}" stroke-width="3" stroke-linecap="round"/><path d="M22 76 h12 M22 82 l12 -2 M98 76 h-12 M98 82 l-12 -2" stroke="${d}" stroke-width="2" stroke-linecap="round"/>`;
+  if(sp==="bug") return `<rect x="47" y="96" width="26" height="15" rx="4" fill="${INK}"/><circle cx="60" cy="103.5" r="5" fill="#9FD8F5"/>`;
+  return "";
+}
+function creatureSVG(sp,mood,stage,extra={}){
+  if(!SPECIES[sp])sp="robot";
+  const stageK=typeof stage==="number"?STAGE_KEYS[stage]:stage;
+  const c=SPECIES[sp].color,d=shade(c,-28),l=shade(c,45);
+  const zz=mood==="sleepy"?`<text class="zz" x="92" y="30" font-family="Fredoka,sans-serif" font-weight="700" font-size="16" fill="#8A7CC9">z</text><text class="zz2" x="100" y="20" font-family="Fredoka,sans-serif" font-weight="700" font-size="12" fill="#8A7CC9">z</text>`:"";
+  const apple=mood==="hungry"?`<g class="zz"><circle cx="100" cy="24" r="12" fill="#fff" stroke="#F0D9E6" stroke-width="2"/><circle cx="100" cy="26" r="6" fill="#F26B6B"/><path d="M100 20 q3 -4 6 -3" stroke="#3BA776" stroke-width="2.5" fill="none"/></g>`:"";
+  const cls=extra.munch?"c-munch":(stageK==="egg"?"c-egg":"c-"+mood);
+  const label=`${SPECIES[sp].name}, ${MOOD_TEXT[mood]||""}`;
+  if(stageK==="egg"){
+    return `<svg viewBox="0 0 120 120" role="img" aria-label="${label} (egg)"><ellipse cx="60" cy="114" rx="30" ry="5" fill="rgba(59,51,85,.12)"/><g class="${cls}">
+      <path d="M60 14 C88 14 100 60 100 80 C100 104 82 114 60 114 C38 114 20 104 20 80 C20 60 32 14 60 14Z" fill="${l}" stroke="${d}" stroke-width="2"/>
+      <circle cx="40" cy="90" r="7" fill="${c}"/><circle cx="78" cy="96" r="9" fill="${c}"/><circle cx="84" cy="66" r="5" fill="${c}"/>
+      <polyline points="24,74 36,66 46,76 58,64 70,76 82,66 96,74" fill="none" stroke="${d}" stroke-width="3" stroke-linejoin="round"/>
+      ${eyes(mood,52)}</g>${zz}${apple}</svg>`;
+  }
+  const sc=stageK==="baby"?0.78:1,ty=stageK==="baby"?22:0;
+  const crown=stageK==="hero"?`<polygon points="44,30 48,14 56,26 60,10 64,26 72,14 76,30" fill="#F5C542" stroke="#D9A81E" stroke-width="2" stroke-linejoin="round"/>`:"";
+  const hat=mood==="party"?`<polygon points="60,2 48,34 72,34" fill="#FF8FB8"/><circle cx="60" cy="3" r="5" fill="#F5C542"/><path d="M52 24 L68 18 M50 30 L70 24" stroke="#fff" stroke-width="3"/>`:"";
+  const band=mood==="ready"?`<rect x="24" y="46" width="72" height="8" rx="4" fill="#E0558F"/><path d="M96 50 l10 -6 l-2 10z" fill="#E0558F"/>`:"";
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="${label}"><ellipse cx="60" cy="114" rx="${30*sc}" ry="5" fill="rgba(59,51,85,.12)"/>
+   <g transform="translate(${60-60*sc} ${ty}) scale(${sc})"><g class="${cls}">
+    ${ears(sp,c,d,l)}
+    <ellipse class="arm-l" cx="26" cy="84" rx="8" ry="12" fill="${d}"/><ellipse class="arm-r" cx="94" cy="84" rx="8" ry="12" fill="${d}"/>
+    <ellipse cx="44" cy="108" rx="11" ry="6" fill="${d}"/><ellipse cx="76" cy="108" rx="11" ry="6" fill="${d}"/>
+    <ellipse cx="60" cy="74" rx="38" ry="36" fill="${c}"/>
+    <ellipse cx="60" cy="88" rx="22" ry="17" fill="${l}"/>
+    ${band}${topper(sp,d)}
+    ${eyes(mood,64)}
+    <circle cx="36" cy="77" r="5.5" fill="#FF9EC0" opacity=".55"/><circle cx="84" cy="77" r="5.5" fill="#FF9EC0" opacity=".55"/>
+    ${mouth(mood,80,sp)}
+    ${crown}${hat}
+   </g></g>${zz}${apple}</svg>`;
+}
+const cre=(k,s,mood,extra)=>creatureSVG(spOf(k,s),mood??moodOf(k,s),stageOf(starsOf(k,s)),extra);
+function weedsSVG(n){let s="";for(let i=0;i<Math.min(n,3);i++){const x=8+i*40;s+=`<path d="M${x} 26 q2 -16 6 -22 M${x+6} 26 q0 -18 -2 -24 M${x+10} 26 q3 -12 10 -16" stroke="#7FB069" stroke-width="3" fill="none" stroke-linecap="round"/>`}
+  return `<svg class="weeds" viewBox="0 0 120 26" aria-hidden="true"><g transform="translate(${(120-(Math.min(n,3)*40-18))/2-8} 0)">${s}</g></svg>`}
+
+/* ---------- Charts (hand-drawn SVG, one scale per chart) ---------- */
+function sparkTerms(k,s,w=200,h=56){
+  const cps=k.checkpoints.filter(c=>s.terms[c]!=null);const vals=cps.map(c=>s.terms[c]);
+  if(vals.length<2)return `<svg class="spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><text x="${w/2}" y="${h/2+4}" text-anchor="middle" font-size="12" font-weight="700" fill="#6E6688">More reports will draw a line here</text></svg>`;
+  const lo=Math.min(50,...vals),hi=100,px=i=>8+i*(w-16)/(vals.length-1),py=v=>6+(hi-v)*(h-18)/(hi-lo);
+  const pts=vals.map((v,i)=>`${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(" ");const col=lineOf(k,s);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="0" x2="${w}" y1="${py(90)}" y2="${py(90)}" stroke="#D7F5E5" stroke-width="2"/>
+    <polyline points="8,${h-6} ${pts} ${px(vals.length-1)},${h-6}" fill="${col}" opacity=".10" stroke="none"/>
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    ${vals.map((v,i)=>`<circle cx="${px(i)}" cy="${py(v)}" r="${i===vals.length-1?4.5:2.5}" fill="${i===vals.length-1?col:"#fff"}" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/>`).join("")}</svg>`;
+}
+function tinySpark(k,s){const vals=k.checkpoints.map(c=>s.terms[c]).filter(v=>v!=null);if(vals.length<2)return"";
+  const w=90,h=26,px=i=>3+i*(w-6)/(vals.length-1),py=v=>Math.min(h-3,3+(100-v)*(h-6)/70);const col=lineOf(k,s);
+  return `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${vals.map((v,i)=>`${px(i)},${py(v)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/><circle cx="${px(vals.length-1)}" cy="${py(vals.at(-1))}" r="3" fill="${col}"/></svg>`}
+function scoreChart(k,s,title){
+  const g=graded(k,s.id);if(!g.length)return `<p class="sub">No graded work yet.</p>`;
+  const W=640,H=230,L=34,RM=12,T=12,B=28;
+  const first=g[0].due,t0=d2t(addDays(first,-5)),t1=d2t(P.now);
+  const x=iso=>L+(d2t(iso)-t0)/(t1-t0)*(W-L-RM),y=v=>T+(100-Math.max(0,Math.min(100,v)))*(H-T-B)/100;
+  const ro=rolling(g);const col=lineOf(k,s);
+  const months=[];for(let d=new Date(t0);d.getTime()<=t1;d.setMonth(d.getMonth()+1)){const m=new Date(d.getFullYear(),d.getMonth(),15);if(m.getTime()>=t0&&m.getTime()<=t1)months.push([m.toISOString().slice(0,10),m.toLocaleDateString("en-US",{month:"short"})])}
+  const grid=[0,50,70,90,100].map(v=>`<line x1="${L}" x2="${W-RM}" y1="${y(v)}" y2="${y(v)}" stroke="#E9E3F5"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" font-weight="700" fill="#6E6688">${v}</text>`).join("");
+  const band=`<rect x="${L}" y="${y(100)}" width="${W-L-RM}" height="${y(90)-y(100)}" fill="#D7F5E5" opacity=".55"/>`;
+  const lc=P.lastCheck&&d2t(P.lastCheck)>t0?`<line x1="${x(P.lastCheck)}" x2="${x(P.lastCheck)}" y1="${T}" y2="${H-B}" stroke="#CBB8F2" stroke-dasharray="4 4"/><text x="${x(P.lastCheck)+4}" y="${T+10}" font-size="10" font-weight="800" fill="#8A7CC9">last check</text>`:"";
+  const path=g.map((it,i)=>`${i?"L":"M"}${x(it.due).toFixed(1)} ${y(ro[i]).toFixed(1)}`).join(" ");
+  const dots=g.map(it=>`<circle cx="${x(it.due).toFixed(1)}" cy="${y(it.score).toFixed(1)}" r="${it.cat==="major"?7:4.5}" fill="${it.new?col:"#fff"}" stroke="${col}" stroke-width="2.2"><title>${esc(it.title)}: ${R(it.score)}${it.cat==="major"?" (test)":""}</title></circle>`).join("");
+  return `<div class="chartbox"><h4>${title||"Every graded assignment"}</h4>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.label)} scores over time">${band}${grid}
+     ${months.map(([d,m])=>`<text x="${x(d)}" y="${H-8}" text-anchor="middle" font-size="11" font-weight="700" fill="#6E6688">${m}</text>`).join("")}
+     ${lc}<path d="${path}" fill="none" stroke="${col}" stroke-width="3" stroke-linejoin="round" opacity=".55"/>${dots}</svg>
+    <div class="legend"><span><i style="background:${col}"></i>New since last check</span><span><i style="background:#fff;border:2px solid ${col}"></i>Earlier</span><span>Big dot = test or project</span><span>Line = average of last 5</span></div></div>`;
+}
+function termChart(k){
+  const cps=k.checkpoints;if(cps.length<2||!k.subjects.length)return `<p class="sub">The chart starts once there are two report periods.</p>`;
+  const W=640,H=250,L=34,RM=130,T=14,B=28,lo=30,x=i=>L+i*(W-L-RM)/(cps.length-1),y=v=>T+(100-Math.max(lo,v))*(H-T-B)/(100-lo);
+  const grid=[30,50,70,80,90,100].map(v=>`<line x1="${L}" x2="${W-RM}" y1="${y(v)}" y2="${y(v)}" stroke="#E9E3F5"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" font-weight="700" fill="#6E6688">${v}</text>`).join("");
+  const ends=[];
+  const lines=k.subjects.map(s=>{const pts=cps.map((c,i)=>s.terms[c]!=null?[x(i),y(s.terms[c])]:null).filter(Boolean);if(!pts.length)return"";const col=lineOf(k,s);
+    ends.push({y:pts.at(-1)[1],s,col});
+    return `<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/>${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${col}"/>`).join("")}`}).join("");
+  ends.sort((a,b)=>a.y-b.y);for(let i=1;i<ends.length;i++)if(ends[i].y-ends[i-1].y<13)ends[i].y=ends[i-1].y+13;
+  const labels=ends.map(e=>`<text x="${W-RM+8}" y="${e.y+4}" font-size="11" font-weight="800" fill="${e.col}">${esc(e.s.label)} ${R(e.s.grade)}</text>`).join("");
+  return `<div class="chartbox"><h4>${esc(kidName(k))}: grades at each report</h4><svg viewBox="0 0 ${W} ${Math.max(H,(ends.at(-1)?.y||0)+16)}" role="img" aria-label="${esc(kidName(k))} grades by report period">${grid}
+    ${cps.map((c,i)=>`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" font-weight="700" fill="#6E6688">${c}</text>`).join("")}${lines}${labels}</svg></div>`;
+}
+function teamBar(){
+  const T=tiers(),n=teamStars(),max=T.length?T.at(-1).stars:100,pct=Math.min(100,n/max*100);
+  const next=T.find(t=>n<t.stars),ready=T.filter(t=>n>=t.stars&&!redeemed(t.stars));
+  return `<div class="gold-wrap"><div class="gold-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${n}" aria-label="Team stars"><i style="width:${pct}%"></i>
+     ${T.map(t=>`<span class="mark ${n>=t.stars?"hit":""}" style="left:${t.stars/max*100}%"></span>`).join("")}</div>
+     <div class="gold-labels">${T.map(t=>`<span class="glabel ${n>=t.stars?"hit":""} ${redeemed(t.stars)?"used":""}" style="left:${t.stars/max*100}%"><b>${t.stars}</b>${esc(t.reward)}${redeemed(t.stars)?" ✓":""}</span>`).join("")}</div></div>
+   <p class="gold-line"><b>${n} team stars</b>${ready.length?` · <span class="unlock">${esc(ready.map(t=>t.reward).join(" and "))} unlocked! Ask a grown-up to cash it in.</span>`:next?` · ${next.stars-n} more to ${esc(next.reward)}`:" · Every reward reached this season!"}</p>`}
+
+/* ---------- Little helpers ---------- */
+function toast(msg){const t=document.createElement("div");t.className="toast pop";t.setAttribute("role","status");t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function chime(up=true){if(S.muted)return;try{const A=window.AudioContext||window.webkitAudioContext;const a=chime.ctx||(chime.ctx=new A());
+  [0,0.09,0.18].forEach((t,i)=>{const o=a.createOscillator(),g=a.createGain();o.type="sine";o.frequency.value=(up?[660,880,1175]:[523,659,784])[i];
+  g.gain.setValueAtTime(0.0001,a.currentTime+t);g.gain.exponentialRampToValueAtTime(0.18,a.currentTime+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+t+0.3);
+  o.connect(g).connect(a.destination);o.start(a.currentTime+t);o.stop(a.currentTime+t+0.32)})}catch(e){}}
+function confetti(ms=2600){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const cv=document.getElementById("confetti"),cx=cv.getContext("2d");cv.hidden=false;
+  const W=cv.width=innerWidth*devicePixelRatio,H=cv.height=innerHeight*devicePixelRatio;
+  const cols=["#F5C542","#FF8FB8","#8FD0F2","#9BE0B8","#CBB8F2","#FFB38A"];
+  const Pc=Array.from({length:160},()=>({x:Math.random()*W,y:-Math.random()*H*0.5,vx:(Math.random()-.5)*4,vy:2+Math.random()*4,s:(4+Math.random()*6)*devicePixelRatio,c:cols[Math.random()*cols.length|0],w:Math.random()*6}));
+  const t0=performance.now();(function f(t){cx.clearRect(0,0,W,H);
+    Pc.forEach(p=>{p.x+=p.vx;p.y+=p.vy*devicePixelRatio;p.w+=.1;cx.save();cx.translate(p.x,p.y);cx.rotate(p.w);cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);cx.restore()});
+    if(t-t0<ms)requestAnimationFrame(f);else{cx.clearRect(0,0,W,H);cv.hidden=true}})(t0)}
+const ICON={
+  lock:`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
+  sound:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg>`,
+  mute:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg>`,
+  swap:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="M17 20l4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/></svg>`,
+  x:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
+  star:`<svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21l1.5-7L2 9.3l7-.8z" fill="#F5C542" stroke="#D9A81E" stroke-width="1.2" stroke-linejoin="round"/></svg>`
+};
+const gpill=s=>{const t=trend(s);return `<span class="gp ${gcls(s.grade)}" title="${esc(s.label)}: ${R(s.grade)}">${R(s.grade)}<span class="ar ${t.c}">${t.a}${t.d?Math.abs(t.d):""}</span></span>`};
+function avatarHTML(k,size){const p=profOf(k);
+  return p.pic.type==="photo"?`<img src="${p.pic.data}" alt="" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block">`
+    :`<span style="display:block;width:${size}px;height:${size}px;border-radius:50%;background:#fff;overflow:hidden">${creatureSVG(p.pic.sp,"happy","grown")}</span>`}
+function applyTheme(){const k=kid();if(!k||S.view==="parent"){document.body.style.removeProperty("--accent");return}
+  const t=THEMES.find(x=>x[0]===profOf(k).theme)||THEMES[0];document.body.style.setProperty("--accent",t[2])}
+const todayLabel=()=>D(P.now).toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+
+/* ---------- Screens ---------- */
+const app=document.getElementById("app"),layer=document.getElementById("layer");
+function render(){
+  document.body.className=S.view==="parent"?"parent-mode":"";applyTheme();
+  if(S.view==="parent"&&P.parent){renderParent();return}
+  S.view="kid";
+  if(!kid()){renderPicker();return}
+  renderKid();
+}
+function renderPicker(){
+  app.innerHTML=`<section class="picker"><h1>Who's here?</h1>
+    <div class="pickrow">${P.kids.map(k=>{const p=profOf(k);
+      return `<button class="pick" data-pick="${esc(k.id)}"><div class="cw">${p.pic.type==="photo"?`<img src="${p.pic.data}" alt="" style="width:130px;height:130px;border-radius:50%;object-fit:cover">`:creatureSVG(p.pic.sp,"dance","grown")}</div><b>${esc(kidName(k))}</b><span class="sub" style="margin:0">${esc(k.gradeLabel)}</span></button>`}).join("")||`<p class="sub">No grades yet. They show up after the first Skyward check.</p>`}</div>
+    <p class="demo-note">On your own tablet this remembers you. On a shared screen, tap your name.</p>
+    <button class="grownups" id="parent">${ICON.lock} Grown-ups</button></section>`;
+  if(location.hash==="#grownups"){history.replaceState(null,"",location.pathname);P.parent?openParent():pinPad()}
+}
+const totalStars=k=>k.subjects.reduce((a,s)=>a+starsOf(k,s),0);
+function questRow(k,q,isLeft){
+  const s=subj(k,q.sub);if(!s)return"";
+  const c=claimOf(q.key),w=reqOf(q.key),late=q.due?Math.round((d2t(P.now)-d2t(q.due))/DAY):0;
+  const when=!q.due?"":late>0?`Was due ${fmt(q.due)}`:late===0?"Due today":late===-1?"Due tomorrow":`Due ${fmt(q.due)}`;
+  let right,cls="";
+  if(c&&verified(q)){right=`<span class="tag gold">Verified!</span>`;cls="verified"}
+  else if(c){right=`<div class="qlinks"><span class="tag wait">Claimed. Waiting for teacher</span><button class="undo" data-unclaim="${esc(q.key)}">undo</button></div>`;cls="claimed"}
+  else if(w&&w.status==="pending"){right=`<div class="qlinks"><span class="tag ask">Asked a grown-up</span><button class="undo" data-unask="${esc(q.key)}">undo</button></div>`;cls="asked"}
+  else right=`<div class="qlinks"><button class="did" data-claim="${esc(q.key)}">I did it!</button>${isMissing(q)?`<button class="cant" data-cant="${esc(q.key)}">Can't do this?</button>`:""}</div>`;
+  const declined=w&&w.status==="declined"&&!c?` · <b style="color:#8A4B00">Grown-up says: let's still do this one</b>`:"";
+  const mood=c||w?.status==="pending"?"happy":isLeft?"ready":isMissing(q)?moodOf(k,s):"happy";
+  return `<div class="quest ${cls}" id="q-${esc(q.key).replace(/[^\w-]/g,"_")}">
+    <div class="mini">${cre(k,s,mood)}</div>
+    <div class="qt"><b>${esc(q.title)}</b><small>${esc(s.label)}${when?" · "+when:""}${!c&&!isLeft&&isMissing(q)&&!(w&&w.status==="pending")?" · "+esc(tone(k).lowLine(cname(k,s))):""}${declined}</small></div>
+    ${right}</div>`;
+}
+function renderKid(){
+  const k=kid(),T=tone(k);
+  const quests=questsOf(k),left=leftoversOf(k),open=openQuests(k);
+  const lead=k.subjects[0];
+  const questsHTML=quests.length?quests.map(q=>questRow(k,q,false)).join(""):
+     `<div class="empty">${lead?`<div class="mini">${cre(k,lead,"dance")}</div>`:""}<div><b style="font-family:var(--display);font-size:20px;font-weight:600">Nothing missing this term!</b><br><span style="font-weight:600">${T.clear} Skyward shows nothing due tomorrow either.</span></div></div>`;
+  const leftHTML=left.length?`<details class="left"><summary>${left.length} older one${left.length>1?"s":""} from earlier terms</summary>
+     <p class="sub" style="margin:8px 0 0">These don't make anyone ${k.low}. If one can't be done anymore, tap <b>Can't do this?</b> and a grown-up will check.</p>
+     <div class="quests">${left.map(q=>questRow(k,q,true)).join("")}</div></details>`:"";
+  const spots=k.subjects.map(s=>{const m=moodOf(k,s),miss=openMissing(k,s.id).length;
+    return `<button class="spot" data-creature="${esc(s.id)}" aria-label="${esc(cname(k,s))}, ${esc(s.label)}, grade ${R(s.grade)}, ${MOOD_TEXT[m]}">
+      <div class="cw">${cre(k,s,m)}</div>${miss?weedsSVG(miss):""}
+      <span class="nm">${esc(cname(k,s))}</span><span class="sj">${esc(s.label)}</span>${gpill(s)}
+      <span class="mood ${MOOD_CLASS[m]}">${MOOD_TEXT[m]}${miss?` · ${miss} to do`:""}</span></button>`}).join("");
+  const specials=k.specials.length?`<div class="specials"><div class="mini">${creatureSVG("chick","dance","grown")}</div><div>Specials squad: ${k.specials.map(x=>`${esc(x.label)} (${esc(x.grade)})`).join(", ")}.${k.specials.every(x=>x.grade==="E")?" All Excellent!":""}</div></div>`:"";
+  const fresh=k.items.filter(i=>i.new&&i.score!=null&&!i.ts&&subj(k,i.sub)).sort((a,b)=>b.due.localeCompare(a.due));
+  const newsHTML=fresh.length?fresh.slice(0,6).map(i=>{const s=subj(k,i.sub);return `<button class="newrow" data-creature="${esc(s.id)}">
+     <div class="mini">${cre(k,s,i.score>=90?"dance":i.score>=80?"happy":"ready")}</div>
+     <div class="tt"><b>${esc(i.title)}</b><small>${esc(s.label)} · ${fmt(i.due)}${i.cat==="major"?" · Test/project":""}</small></div>
+     <span class="sc-chip ${gcls(i.score)}">${R(i.score)}</span></button>`}).join(""):`<p class="sub">No new grades ${since()}.</p>`;
+  let podiumHTML="",cbHTML="";
+  if(k.subjects.length>=3){
+    const ranked=[...k.subjects].sort((a,b)=>b.grade-a.grade).slice(0,3);
+    const order=[ranked[1],ranked[0],ranked[2]],pcls=["p2","p1","p3"],place=["2","1","3"];
+    podiumHTML=`<div class="podium">${order.map((s,i)=>{const m=moodOf(k,s);return `<div class="step ${pcls[i]}"><button class="cw" data-creature="${esc(s.id)}" aria-label="${esc(cname(k,s))}">${cre(k,s,m===k.low?m:m==="party"?"party":"dance")}</button>
+      <div class="block"><span class="place">${place[i]}</span><span class="sname">${esc(s.label)}</span><span class="pct">${R(s.grade)}</span></div></div>`}).join("")}</div>`;
+    const cb=[...k.subjects].map(s=>({s,g:Math.round(s.grade-s.prev)})).sort((a,b)=>b.g-a.g)[0];
+    const cbMood=moodOf(k,cb.s),n=openMissing(k,cb.s.id).length;
+    cbHTML=cb.g>=5?`<div class="comeback"><button class="cw" data-creature="${esc(cb.s.id)}">${cre(k,cb.s,cbMood===k.low?cbMood:"party")}</button>
+       <div><b>Comeback Kid: ${esc(cb.s.label)}</b><p>Up ${cb.g} points ${since()} (${R(cb.s.prev)} to ${R(cb.s.grade)}).${cbMood===k.low?` ${esc(cname(k,cb.s))} is ${k.low} though. Finish its ${n===1?"last item":"items"} to start the party.`:" Biggest climb of the week!"}</p></div></div>`
+       :`<div class="comeback"><div><b>Comeback Kid spot is open</b><p>The first subject to climb 5 points takes it.</p></div></div>`;
+  }
+  const progHTML=k.subjects.map(s=>{const t=trend(s);const l5=graded(k,s.id).filter(i=>i.term===k.term).slice(-5);
+    const firstTerm=k.checkpoints.map(c=>s.terms[c]).find(v=>v!=null);
+    return `<button class="pcard" data-creature="${esc(s.id)}">
+      <div class="ph"><div class="mini">${cre(k,s)}</div><b>${esc(s.label)}</b><span class="big">${R(s.grade)}</span></div>
+      ${sparkTerms(k,s)}
+      <span class="trendline ${t.c}">${t.a} ${t.c==="flat"?"Steady "+since():(t.c==="up"?"Up ":"Down ")+Math.abs(t.d)+" "+since()}</span>
+      <span class="lbl">Started the year at ${R(firstTerm)} · Last 5 average ${l5.length?avg(l5.map(i=>i.score)):"–"}</span></button>`}).join("");
+  app.innerHTML=`
+  <header class="top">
+    <button class="avatar-btn" id="profile" aria-label="Edit my profile">${avatarHTML(k,64)}<span class="edit-dot">Edit</span></button>
+    <div class="hello"><h1>${T.hi} ${esc(kidName(k))}${T.bang}</h1><p>${todayLabel()}${k.gradeLabel?" · "+esc(k.gradeLabel):""}</p></div>
+    <span class="chip starchip" title="Stars from every assignment you've turned in">${ICON.star} ${totalStars(k)}</span>
+    <button class="iconbtn" id="snd" aria-label="${S.muted?"Turn sound on":"Turn sound off"}">${S.muted?ICON.mute:ICON.sound}</button>
+    <button class="iconbtn" id="swap" aria-label="Switch to someone else">${ICON.swap}</button>
+  </header>
+  <div class="grid">
+    <section class="panel"><h2>Tonight's quests</h2>
+      <p class="sub">${open.length?`${open.length} thing${open.length>1?"s":""} to finish. Tap <b>I did it!</b> when it's turned in.`:"Missing work and anything due tomorrow shows up here."}</p>
+      <div class="quests">${questsHTML}</div>${leftHTML}</section>
+    <section class="panel"><h2>${esc(kidName(k))}'s island</h2>
+      <p class="sub">The number is the grade right now. The arrow shows the change ${since()}.</p>
+      <div class="island"><div class="spots">${spots}</div>${specials}</div></section>
+    <section class="panel"><h2>New grades</h2><p class="sub">Graded ${since()}.</p><div class="news">${newsHTML}</div></section>
+    ${podiumHTML?`<section class="panel"><h2>Top subjects</h2><p class="sub">Your three best grades right now.</p>${podiumHTML}${cbHTML}</section>`:""}
+    <section class="panel span2"><h2>My progress</h2><p class="sub">Each line is your grade at every progress report and report card this year. Tap one to see every graded assignment.</p>
+      <div class="prog">${progHTML}</div></section>
+    <section class="panel team span2"><h2>Team star bank</h2>
+      <p class="sub">Every star you and your family earn fills the same golden bar. You've added <b>${kidSeasonStars(k)}</b> since ${fmt(F().rewards.season_start)}.</p>
+      ${teamBar()}</section>
+    <section class="span2 finish">
+      <button class="bigbtn main" id="done">I'm done for tonight<small>See what you did today</small></button>
+      <button class="bigbtn show" id="friday">${D(P.now).getDay()===5?"It's the Friday Show!":"Friday Show"}<small>Your week, with a dance party</small></button></section>
+  </div>
+  <p class="demo-note">Grades from Skyward, checked ${fmt(P.today)}.</p>`;
+}
+
+/* ---------- Overlays ---------- */
+function modal(html,onOpen){layer.innerHTML=`<div class="scrim" id="scrim"><div class="sheet pop" role="dialog" aria-modal="true"><button class="iconbtn close" id="x" aria-label="Close">${ICON.x}</button>${html}</div></div>`;
+  const sc=document.getElementById("scrim");sc.addEventListener("click",e=>{if(e.target===sc)close()});document.getElementById("x").onclick=close;onOpen&&onOpen();document.getElementById("x").focus()}
+function close(){layer.innerHTML="";render()}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&layer.innerHTML)close()});
+
+function openCreature(subId){
+  const k=kid(),s=subj(k,subId);if(!s)return;
+  const m=moodOf(k,s),stars=starsOf(k,s),st=stageOf(stars),nx=P.stages[st+1],t=trend(s),q=openMissing(k,s.id),sp=spOf(k,s);
+  const prog=nx!=null?Math.round((stars-P.stages[st])/(nx-P.stages[st])*100):100;
+  const why={hungry:`It's hungry because ${q.length} ${s.label} item${q.length>1?"s are":" is"} missing. Each one you turn in feeds it.`,
+    sleepy:`It dozed off because ${q.length} ${s.label} item${q.length>1?"s are":" is"} missing. Turning them in wakes it up.`,
+    party:`Party hat! ${s.label} went up ${t.d} points ${since()}.`,dance:`Dancing because ${s.label} is at ${R(s.grade)}.`,
+    happy:`Happy and bouncing. ${s.label} is at ${R(s.grade)}.`,ready:`In training. ${s.label} is at ${R(s.grade)}. Every good score gets it closer to dancing.`}[m];
+  const g=graded(k,s.id).slice().reverse();
+  const tests=g.filter(i=>i.cat==="major"&&i.term===k.term),daily=g.filter(i=>i.cat==="minor"&&i.term===k.term);
+  modal(`<div class="center"><div class="bigc">${cre(k,s,m)}</div>
+    <h2>${esc(cname(k,s))}</h2><p class="sub" style="margin:4px 0 0">${esc(s.label)}${s.teacher?" · "+esc(s.teacher):""} · ${STAGE_NAMES[st]}</p></div>
+    <p style="font-weight:700">${why}</p>
+    <div class="facts"><div class="fact"><b>${R(s.grade)}</b><span>Grade now</span></div><div class="fact"><b class="${t.c}">${t.a}${t.d?Math.abs(t.d):""}</b><span>${P.lastCheck?"Since "+fmt(P.lastCheck):"Change"}</span></div><div class="fact"><b>${stars}</b><span>Stars</span></div></div>
+    <div class="chartbox"><h4>Grade at each report</h4>${sparkTerms(k,s,560,110)}
+      <div class="legend">${k.checkpoints.filter(c=>s.terms[c]!=null).map(c=>`<span>${c}: <b style="color:var(--ink)">${R(s.terms[c])}</b></span>`).join("")}</div></div>
+    ${scoreChart(k,s)}
+    ${tests.length&&daily.length?`<p style="font-weight:700;margin:4px 0 10px">This term: tests and projects average <b>${avg(tests.map(i=>i.score))}</b>, daily work averages <b>${avg(daily.map(i=>i.score))}</b>.</p>`:""}
+    <h3 style="font-size:18px;margin:6px 0">Graded work</h3>
+    <ul class="list">${g.slice(0,12).map(i=>`<li><span style="min-width:0;overflow-wrap:anywhere">${esc(i.title)}${i.new?'<span class="newbadge">NEW</span>':""}<br><small style="color:var(--ink-soft)">${fmt(i.due)}${i.cat==="major"?" · Test/project":""}</small></span><span class="sc sc-chip ${gcls(i.score)}">${R(i.score)}</span></li>`).join("")||"<li>Nothing graded yet.</li>"}</ul>
+    ${g.length>12?`<p class="sub">Plus ${g.length-12} older ones. Grown-ups can see them all.</p>`:""}
+    <p style="font-weight:800;margin:14px 0 6px">${nx!=null?`${nx-stars} more star${nx-stars>1?"s":""} to grow into a ${STAGE_NAMES[st+1]}`:"Fully grown hero!"}</p>
+    <div class="bar"><i style="width:${prog}%"></i></div>
+    <div class="stage">${STAGE_KEYS.map((x,i)=>`<div class="cw" title="${STAGE_NAMES[i]}" style="opacity:${i<=st?1:.3}">${creatureSVG(sp,"happy",x)}</div>`).join("")}</div>
+    <p style="font-weight:800;margin:14px 0 6px">Pick a different character</p>
+    <div class="charpick">${Object.keys(SPECIES).map(x=>`<button class="charopt ${x===sp?"on":""}" data-setsp="${x}" aria-label="${SPECIES[x].name}" aria-pressed="${x===sp}">${creatureSVG(x,"happy","grown")}</button>`).join("")}</div>
+    <label for="nm-in" style="font-weight:800;display:block;margin-top:14px">Give it a name</label>
+    <div class="row" style="margin-top:6px"><input class="field" id="nm-in" maxlength="14" value="${esc(cname(k,s))}"><button class="btn" id="nm-save">Save name</button></div>`,
+  ()=>{layer.querySelectorAll("[data-setsp]").forEach(b=>b.onclick=async()=>{if(await api("/api/creature",{kid:k.id,subject:s.id,sp:b.dataset.setsp})){chime();openCreature(subId)}});
+    document.getElementById("nm-save").onclick=async()=>{const v=document.getElementById("nm-in").value.trim();
+      if(await api("/api/creature",{kid:k.id,subject:s.id,name:v})){if(v){toast(`Say hi to ${v}!`);chime()}close()}}});
+}
+function openProfile(){
+  const k=kid(),p=profOf(k);let pic=p.pic,theme=p.theme;
+  const draw=()=>{document.getElementById("pv").innerHTML=pic.type==="photo"?`<img src="${pic.data}" alt="" style="width:120px;height:120px;border-radius:50%;object-fit:cover">`:creatureSVG(pic.sp,"dance","grown");
+    layer.querySelectorAll("[data-pic]").forEach(b=>b.classList.toggle("on",pic.type==="char"&&b.dataset.pic===pic.sp));
+    layer.querySelectorAll("[data-theme-pick]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.themePick===theme)))};
+  modal(`<div class="center"><h2>My profile</h2><div id="pv" class="bigc" style="width:120px;height:120px;margin:10px auto"></div></div>
+    <label for="pf-name" style="font-weight:800">My name</label>
+    <input class="field" id="pf-name" maxlength="16" style="width:100%;margin:6px 0 14px" value="${esc(kidName(k))}">
+    <p style="font-weight:800;margin:0 0 6px">Profile picture</p>
+    <div class="charpick">${Object.keys(SPECIES).map(sp=>`<button class="charopt" data-pic="${sp}" aria-label="${SPECIES[sp].name}">${creatureSVG(sp,"happy","grown")}</button>`).join("")}</div>
+    <label class="btn ghost" style="display:inline-block;margin:10px 0 14px;cursor:pointer">Use a photo<input type="file" id="pf-photo" accept="image/*" hidden></label>
+    <p style="font-weight:800;margin:0 0 6px">My color</p>
+    <div class="row" style="margin-bottom:16px">${THEMES.map(([v,l,c])=>`<button class="swatch" data-theme-pick="${v}" aria-label="${l}" style="background:${c}"></button>`).join("")}</div>
+    <div class="row"><button class="btn" id="pf-save">Save profile</button><button class="btn ghost" id="pf-reset">Reset</button></div>`,
+  ()=>{draw();
+    layer.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{pic={type:"char",sp:b.dataset.pic};draw()});
+    layer.querySelectorAll("[data-theme-pick]").forEach(b=>b.onclick=()=>{theme=b.dataset.themePick;draw();document.body.style.setProperty("--accent",THEMES.find(x=>x[0]===theme)[2])});
+    document.getElementById("pf-photo").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+      r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=c.height=240;const x=c.getContext("2d");
+        const m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,240,240);pic={type:"photo",data:c.toDataURL("image/jpeg",.8)};draw()};
+        im.onerror=()=>toast("That photo didn't load. Try another one.");im.src=r.result};r.readAsDataURL(f)};
+    document.getElementById("pf-save").onclick=async()=>{if(await api("/api/profile",{kid:k.id,name:document.getElementById("pf-name").value.trim(),pic,theme})){toast("Profile saved");chime();close()}};
+    document.getElementById("pf-reset").onclick=async()=>{if(await api("/api/profile",{kid:k.id,name:""}))close()}});
+}
+async function claim(key){
+  const k=kid(),q=k.items.find(i=>i.key===key),s=subj(k,q.sub);
+  if(!await api("/api/claim",{key,kid:k.id}))return;
+  chime();toast(tone(k).fed(cname(k,s)));render();
+  const row=document.getElementById("q-"+key.replace(/[^\w-]/g,"_"));if(row)row.querySelector(".mini").innerHTML=cre(k,s,"dance",{munch:true});
+  if(openQuests(k).length===0)setTimeout(()=>{confetti();toast(tone(k).clear)},600);
+}
+function cantDo(key){
+  const k=kid(),q=k.items.find(i=>i.key===key),s=subj(k,q.sub);
+  modal(`<h2>Can't do this one?</h2><p class="sub">${esc(q.title)} · ${esc(s.label)}. Tell a grown-up why. They'll check and take it off your list.</p>
+    <div class="reasons">${Object.entries(REASONS_KID).map(([v,l],i)=>`<label><input type="radio" name="rs" value="${v}" ${i===0?"checked":""}> ${l}</label>`).join("")}</div>
+    <label for="rs-note" style="font-weight:800">Anything else? (optional)</label>
+    <input class="field" id="rs-note" maxlength="80" style="width:100%;margin:6px 0 14px" placeholder="Like: Ms. Lee said it's okay">
+    <div class="row"><button class="btn" id="rs-send">Ask a grown-up</button><button class="btn ghost" id="rs-cancel">Never mind</button></div>`,
+  ()=>{document.getElementById("rs-cancel").onclick=close;document.getElementById("rs-send").onclick=async()=>{
+    if(await api("/api/request",{key,kid:k.id,reason:layer.querySelector("input[name=rs]:checked").value,note:document.getElementById("rs-note").value.trim()})){toast("Sent to a grown-up");close()}}});
+}
+function recap(){
+  const k=kid(),T=tone(k);
+  const today=k.items.filter(q=>claimOf(q.key)?.at===P.now);
+  const asked=k.items.filter(q=>reqOf(q.key)?.status==="pending"&&reqOf(q.key).at===P.now).length;
+  const left=openQuests(k),allClear=left.length===0;
+  let cheer="";
+  if(!allClear){const bySub={};left.forEach(q=>bySub[q.sub]=(bySub[q.sub]||0)+1);
+    const [sid,n]=Object.entries(bySub).sort((a,b)=>a[1]-b[1])[0];cheer=`${n===1?"One more":n+" more"} and ${esc(cname(k,subj(k,sid)))} gets a party. ${T.cheer}`}
+  const best=k.items.filter(i=>i.new&&i.st==="done"&&!i.ts).sort((a,b)=>b.score-a.score)[0];
+  modal(`<div class="center"><h2>${allClear?(today.length?"You crushed it!":"All clear tonight!"):"Nice work tonight"}</h2>
+    <p class="sub">${today.length?`You turned in ${today.length} thing${today.length>1?"s":""} and earned ${today.length} star${today.length>1?"s":""}. That's +${today.length} on the team bar.`:"Nothing new turned in tonight."}${asked?` You asked a grown-up about ${asked}.`:""}</p></div>
+    ${today.length?`<ul class="list">${today.map(q=>`<li>${ICON.star}<span>${esc(q.title)}</span><span class="sc">${esc(subj(k,q.sub)?.label||"")}</span></li>`).join("")}</ul>`:""}
+    ${best?`<p class="center" style="font-weight:700">Best new grade: <b>${R(best.score)}</b> on ${esc(best.title)}.</p>`:""}
+    <div class="stage">${k.subjects.filter(s=>allClear||["dance","party","happy"].includes(moodOf(k,s))).slice(0,6).map(s=>`<div class="cw">${cre(k,s,allClear?"dance":undefined)}</div>`).join("")}</div>
+    <p class="center" style="font-weight:800;font-size:18px">${allClear?T.clear:cheer}</p>
+    ${!allClear?`<ul class="list">${left.map(q=>`<li><span>${esc(q.title)}</span><span class="sc">${esc(subj(k,q.sub)?.label||"")}</span></li>`).join("")}</ul>`:""}
+    <div class="row" style="justify-content:center"><button class="btn" id="ok">${allClear?"Good night!":"I'll finish tomorrow"}</button></div>`,
+  ()=>{document.getElementById("ok").onclick=close;if(allClear){chime();confetti(3200)}else chime(false)});
+}
+function friday(){
+  const k=kid(),from=addDays(P.now,-7);
+  const week=k.items.filter(r=>r.st==="done"&&r.score!=null&&!r.ts&&r.due>=from&&r.due<=P.now&&subj(k,r.sub)).sort((a,b)=>b.due.localeCompare(a.due));
+  const best=[...week].sort((a,b)=>b.score-a.score)[0];
+  const stars=week.reduce((a,r)=>a+1+(r.score>=90?1:0),0);
+  const ups=k.subjects.filter(s=>s.grade-s.prev>=2);
+  modal(`<div class="center"><h2>The Friday Show</h2><p class="sub">${fmt(from)} to ${fmt(P.now)} · starring ${esc(kidName(k))}'s creatures</p></div>
+    <div class="stage">${k.subjects.map(s=>`<div class="cw">${cre(k,s,"dance")}</div>`).join("")}</div>
+    <div class="facts"><div class="fact"><b>${week.length}</b><span>Graded</span></div><div class="fact"><b>${week.filter(r=>r.score>=90).length}</b><span>90 or more</span></div><div class="fact"><b>${stars}</b><span>Stars</span></div></div>
+    ${best?`<p style="font-weight:800">Best of the week: ${esc(best.title)} (${esc(subj(k,best.sub).label)}) with a ${R(best.score)}!</p>`:`<p style="font-weight:700">No grades came in this week yet. The show goes on!</p>`}
+    ${ups.length?`<p style="font-weight:700">Going up: ${ups.map(s=>`${esc(s.label)} <span class="up">▲${Math.round(s.grade-s.prev)}</span>`).join(", ")}</p>`:""}
+    <ul class="list">${week.map(r=>`<li>${r.score>=90?ICON.star:"<span style='width:18px'></span>"}<span>${esc(r.title)}</span><span class="sc sc-chip ${gcls(r.score)}">${R(r.score)}</span></li>`).join("")}</ul>
+    <div class="row" style="justify-content:center"><button class="btn" id="ok">Bow!</button></div>`,
+  ()=>{document.getElementById("ok").onclick=()=>{confetti();close()};chime();confetti(3000)});
+}
+function pinPad(){
+  let entry="";
+  const draw=()=>{document.getElementById("pd").innerHTML=[0,1,2,3].map(i=>`<i class="${i<entry.length?"on":""}"></i>`).join("")};
+  modal(`<div class="center"><h2>Grown-ups only</h2><p class="sub">Enter the parent PIN.${P.defaultPin?" It's still the starting PIN, 1234. Set DASH_PARENT_PIN in .env to change it.":""}</p></div>
+    <div class="pindots" id="pd"></div><p id="pinmsg" class="center" style="color:#B23A6A;font-weight:800;min-height:1.4em;margin:8px 0 0"></p>
+    <div class="pin">${[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(n=>n===""?"<span></span>":`<button data-pin="${n}" aria-label="${n==="⌫"?"Delete":n}">${n}</button>`).join("")}</div>`,
+  ()=>{draw();layer.querySelectorAll("[data-pin]").forEach(b=>b.onclick=async()=>{const v=b.dataset.pin;if(v==="⌫")entry=entry.slice(0,-1);else if(entry.length<4)entry+=v;draw();
+    if(entry.length===4){const pin=entry;entry="";
+      try{const r=await fetch("/api/parent/unlock",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin}),credentials:"same-origin"});const j=await r.json();
+        if(r.ok){P=j;layer.innerHTML="";openParent()}else{document.getElementById("pinmsg").textContent=j.error||"That's not it. Try again.";setTimeout(draw,300)}}
+      catch(e){document.getElementById("pinmsg").textContent="Can't reach the dashboard.";draw()}}})});
+}
+function openParent(){S.view="parent";S.ptab="family";S.psub=null;render();window.scrollTo(0,0)}
+
+/* ---------- Grown-up view ---------- */
+function courseRows(k){
+  return k.subjects.map(s=>{
+    const cur=k.items.filter(i=>i.sub===s.id&&i.term===k.term&&!i.ts&&!woOf(i.key));
+    const tests=cur.filter(i=>i.cat==="major"&&i.score!=null),daily=cur.filter(i=>i.cat==="minor"&&i.score!=null);
+    const q1=s.terms.Q1,qChange=q1!=null&&k.checkpoints.includes("Q2")?Math.round(s.grade-q1):null;
+    return {s,cur:s.grade,since:Math.round(s.grade-s.prev),qChange,q1,tAvg:avg(tests.map(i=>i.score)),dAvg:avg(daily.map(i=>i.score)),
+      zeros:cur.filter(i=>i.st==="zero"),missing:missingAll(k).filter(i=>i.sub===s.id)}});
+}
+function alertsFor(k){
+  const out=[],r0=P.rules;
+  courseRows(k).forEach(r=>{const n=r.s.label;const curMiss=r.missing.filter(i=>i.term===k.term);
+    const why=[];if(r.zeros.length)why.push(`${r.zeros.length} zero${r.zeros.length>1?"s":""} this term (${r.zeros.map(z=>esc(z.title)).join(", ")})`);
+    if(curMiss.length)why.push(`${curMiss.length} missing this term`);
+    if(r.tAvg!=null&&r.dAvg!=null&&Math.abs(r.tAvg-r.dAvg)>=r0.gap_points)why.push(r.dAvg>r.tAvg?`tests average ${r.tAvg} vs daily work ${r.dAvg}, so tests are pulling it down`:`daily work averages ${r.dAvg} vs tests ${r.tAvg}, so daily work is pulling it down`);
+    if(r.cur<r0.failing_below)out.push({lvl:"red",sid:r.s.id,t:`${n} is at ${R(r.cur)}, below ${r0.failing_below}.`,w:why});
+    else if(r.cur<r0.watch_below)out.push({lvl:"amber",sid:r.s.id,t:`${n} is at ${R(r.cur)}, below a B.`,w:why});
+    else if(r.qChange!=null&&r.qChange<=-r0.drop_points)out.push({lvl:"amber",sid:r.s.id,t:`${n} dropped ${-r.qChange} points from Q1 (${R(r.q1)} to ${R(r.cur)}).`,w:why});
+    else if(r.zeros.length||curMiss.length)out.push({lvl:"amber",sid:r.s.id,t:`${n} is at ${R(r.cur)}, but has work to clean up.`,w:why});
+    if(r.since>=10)out.push({lvl:"green",sid:r.s.id,t:`${n} climbed ${r.since} points ${since()} (${R(r.s.prev)} to ${R(r.cur)}).`,w:[]});
+  });
+  return out.sort((a,b)=>({red:0,amber:1,green:2}[a.lvl]-{red:0,amber:1,green:2}[b.lvl]));
+}
+function stateOf(i){
+  const w=woOf(i.key),c=claimOf(i.key),q=reqOf(i.key);
+  if(w)return ["wo","Written off"];
+  if(q&&q.status==="pending")return ["pend","Kid asked to write off"];
+  if(i.st==="overdue")return c?["pend","Kid says done"]:["missing",i.ts?"No score yet":"Missing"];
+  if(i.st==="open")return ["future","Not due yet"];
+  if(i.st==="exempt")return ["ex","Exempt"];
+  if(i.st==="zero")return ["missing","Zero"];
+  return ["done","Graded"];
+}
+function itemByKey(key){for(const k of P.kids){const i=k.items.find(x=>x.key===key);if(i)return {k,i}}return {}}
+function renderParent(){
+  const tab=S.ptab;
+  const reqs=Object.entries(F().requests).filter(([,w])=>w.status==="pending").map(([key,w])=>({key,w,...itemByKey(key)})).filter(r=>r.i);
+  const claims=Object.entries(F().claims).map(([key,c])=>({key,c,...itemByKey(key)})).filter(r=>r.i&&!verified(r.i));
+  const stale=addDays(P.now,-3);
+  const needs=`<section class="panel"><h2>Needs your OK</h2>
+    ${reqs.length?`<p class="sub">The kids asked to take these off their list.</p><div class="reqs">${reqs.map(r=>`<div class="req"><div class="rt">${esc(kidName(r.k))}: ${esc(r.i.title)}<small>${esc(subj(r.k,r.i.sub)?.label||"")} · due ${fmt(r.i.due)} · “${REASON_SHORT[r.w.reason]||"Other"}”${r.w.note?` · ${esc(r.w.note)}`:""} · asked ${fmt(r.w.at)}</small></div>
+       <button class="sbtn" data-approve="${esc(r.key)}">Approve write-off</button><button class="sbtn ghost" data-decline="${esc(r.key)}">Say no</button></div>`).join("")}</div>`
+      :`<p class="sub">No write-off requests. When a kid taps <b>Can't do this?</b>, it lands here.</p>`}
+    <h3 style="font-size:18px;margin-top:16px">"I did it!" taps still waiting for a score</h3>
+    ${claims.length?`<div class="reqs">${claims.map(r=>`<div class="req" style="background:${r.c.at<stale?"#FFE7E0":"#F1EEFB"}"><div class="rt">${esc(kidName(r.k))}: ${esc(r.i.title)}<small>Tapped ${fmt(r.c.at)}.${r.c.at<stale?" Still no score after 3 days: worth asking about.":" It turns gold once Skyward shows a score."}</small></div></div>`).join("")}</div>`:`<p class="sub">None right now.</p>`}
+  </section>`;
+  let body="";
+  if(tab==="family"){
+    body=`<div class="twocol">${P.kids.map(k=>{const rows=courseRows(k),cur=missingAll(k).filter(i=>i.term===k.term);const a=alertsFor(k).filter(x=>x.lvl!=="green").length;
+      return `<section class="panel"><h2>${esc(kidName(k))} <span class="sub" style="margin:0;font-size:15px">${esc(k.gradeLabel)}</span></h2>
+        <div class="tiles" style="margin:12px 0"><div class="tile"><b>${avg(rows.map(r=>r.cur))??"–"}</b><span>Average now</span></div>
+          <div class="tile ${cur.length?"warn":""}"><b>${cur.length}</b><span>Missing this term</span></div>
+          <div class="tile ${a?"warn":""}"><b>${a}</b><span>Needs a look</span></div></div>
+        ${termChart(k)}
+        <button class="sbtn" data-ptab="${esc(k.id)}">Open ${esc(kidName(k))}'s details</button></section>`}).join("")}</div>`;
+  } else {
+    const k=kidById(tab),rows=courseRows(k),al=alertsFor(k);
+    const curMiss=missingAll(k).filter(i=>i.term===k.term),zeros=rows.flatMap(r=>r.zeros),wos=k.items.filter(i=>woOf(i.key));
+    body=`<div class="tiles">
+      <div class="tile"><b>${avg(rows.map(r=>r.cur))??"–"}</b><span>Average now</span></div>
+      <div class="tile ${rows.filter(r=>r.cur<P.rules.watch_below).length?"warn":""}"><b>${rows.filter(r=>r.cur<P.rules.watch_below).length}</b><span>Below ${P.rules.watch_below}</span></div>
+      <div class="tile ${curMiss.length?"warn":""}"><b>${curMiss.length}</b><span>Missing this term</span></div>
+      <div class="tile"><b>${leftoversOf(k).length}</b><span>Missing, older terms</span></div>
+      <div class="tile ${zeros.length?"warn":""}"><b>${zeros.length}</b><span>Zeros this term</span></div>
+      <div class="tile"><b>${avg(rows.map(r=>r.tAvg).filter(v=>v!=null))??"–"} / ${avg(rows.map(r=>r.dAvg).filter(v=>v!=null))??"–"}</b><span>Tests / daily avg</span></div>
+      <a class="tile" href="#wo-log" style="color:inherit;text-decoration:none"><b>${wos.length}</b><span>Written off · see list</span></a></div>
+    <section class="panel"><h2>Where ${esc(kidName(k))} is lagging</h2><p class="sub">Below ${P.rules.failing_below} is red. Below ${P.rules.watch_below}, or a ${P.rules.drop_points}-point drop from Q1, is amber. A ${P.rules.gap_points}-point gap between tests and daily work is called out.</p>
+      <div class="alerts">${al.map(x=>`<button class="alert ${x.lvl}" data-psub="${esc(x.sid)}" style="text-align:left;width:100%"><div><b>${x.t}</b>${x.w.length?`<small>${x.w.join(" · ")}</small>`:""}</div></button>`).join("")||`<p class="sub">Nothing to flag.</p>`}</div></section>
+    <section class="panel"><h2>Every subject</h2><p class="sub">Tap a row to see every assignment.</p>
+      <div class="tblwrap"><table class="ptable"><thead><tr><th>Subject</th><th>This year</th><th class="num">Now</th><th class="num">${P.lastCheck?"Since "+fmt(P.lastCheck):"Change"}</th><th class="num">vs Q1</th><th class="num">Tests</th><th class="num">Daily</th><th class="num">Zeros</th><th class="num">Missing</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr class="click ${S.psub===r.s.id?"sel":""}" data-psub="${esc(r.s.id)}" tabindex="0"><td class="sname">${esc(r.s.label)}</td><td>${tinySpark(k,r.s)}</td>
+        <td class="num"><span class="gp ${gcls(r.cur)}">${R(r.cur)}</span></td>
+        <td class="num ${r.since>=2?"ok":r.since<=-2?"bad":""}">${r.since>0?"+":""}${r.since}</td>
+        <td class="num ${r.qChange!=null&&r.qChange<=-P.rules.drop_points?"bad":""}">${r.qChange==null?"–":(r.qChange>0?"+":"")+r.qChange}</td>
+        <td class="num">${r.tAvg??"–"}</td><td class="num">${r.dAvg??"–"}</td>
+        <td class="num ${r.zeros.length?"bad":""}">${r.zeros.length}</td><td class="num ${r.missing.length?"bad":""}">${r.missing.length}</td></tr>`).join("")}
+      </tbody></table></div></section>
+    ${S.psub&&subj(k,S.psub)?drill(k,S.psub):""}
+    <section class="panel">${termChart(k)}</section>`;
+  }
+  const texts=P.kids.filter(k=>S.ptab==="family"||k.id===S.ptab).map(k=>{const low=k.subjects.filter(s=>openMissing(k,s.id).length);
+    if(!low.length){const top=[...k.subjects].sort((a,b)=>b.grade-a.grade)[0];return top?`To ${kidName(k)}: ${cname(k,top)} says hi! Nothing missing tonight. ${top.label} is at ${R(top.grade)}.`:""}
+    const s=low[0],n=openMissing(k,s.id).length;return `To ${kidName(k)}: ${cname(k,s)} is ${k.low==="sleepy"?"snoozing":"hungry"}. ${n} ${s.label} item${n>1?"s":""} still missing.`}).filter(Boolean);
+  app.innerHTML=`<div class="pd">
+    <header class="top"><div class="hello"><h1>Grown-ups</h1><p>Skyward checked ${fmt(P.today)}${P.lastCheck?` · compared with ${fmt(P.lastCheck)}`:""}</p></div>
+      <a class="sbtn ghost" href="/classic" style="padding:10px 16px;text-decoration:none">Classic dashboard</a>
+      <button class="sbtn ghost" id="lock" style="padding:10px 16px">${ICON.lock} Lock</button></header>
+    <div class="tabs" role="tablist">${[["family","Family"],...P.kids.map(k=>[k.id,kidName(k)])].map(([v,l])=>`<button class="tab" role="tab" aria-selected="${tab===v}" data-ptab="${esc(v)}">${esc(l)}</button>`).join("")}</div>
+    ${needs}
+    ${writeoffPanel(tab)}
+    ${rewardsPanel()}
+    ${body}
+    <section class="panel"><h2>Notes</h2>
+      <b>Creature-style reminders for tonight</b>${texts.map(t=>`<div class="sms">${esc(t)}</div>`).join("")}
+      <details style="margin-top:12px"><summary style="font-weight:800;cursor:pointer">Mood and star rules</summary><ul class="rules">
+        <li>Missing work this term: the creature gets <b>hungry</b> (elementary) or <b>sleepy</b> (older kids), with weeds beside it. Set KIDS_MOODS in .env to choose.</li>
+        <li>Up 5 or more ${since()}: <b>party hat</b> and Comeback Kid. ${P.rules.strong_at}+: dancing. ${P.rules.watch_below} to ${P.rules.strong_at-1}: happy. Below ${P.rules.watch_below} with nothing missing: training.</li>
+        <li>The arrow next to each grade: up or down 2 or more points ${since()}, otherwise steady.</li>
+        <li>Stars: 1 per graded assignment, plus 1 for 90 or more. An "I did it!" tap counts 1 until the score shows up. Creatures grow at ${P.stages.slice(1).join(", ")} stars.</li>
+        <li>Written-off and teacher-scored items (participation, good character, rehearsal week) never count.</li>
+        <li>The kids are never compared on their screens. The team bar shows the family total, plus each kid's own share.</li></ul></details></section>
+  </div>`;
+}
+function writeoffPanel(tab){
+  const rows=[...Object.entries(P.writeoffs).map(([key,w])=>({key,w,kind:"wo",...itemByKey(key)})),
+    ...Object.entries(F().requests).filter(([,q])=>q.status==="declined").map(([key,w])=>({key,w,kind:"no",...itemByKey(key)}))]
+    .filter(r=>tab==="family"||r.k?.id===tab)
+    .sort((a,b)=>(a.kind===b.kind?0:a.kind==="wo"?-1:1)||String(b.w.written_off_at||b.w.decided_at||"").localeCompare(String(a.w.written_off_at||a.w.decided_at||"")));
+  const n=rows.filter(r=>r.kind==="wo").length;
+  return `<section class="panel" id="wo-log"><h2>Written off</h2>
+    <p class="sub">${n} item${n===1?"":"s"} taken off the list${tab==="family"?"":" for "+esc(kidName(kidById(tab)))}. These never count toward moods, missing work or alerts. Undo puts one back.</p>
+    ${rows.length?`<div class="tblwrap"><table class="ptable"><thead><tr>${tab==="family"?"<th>Kid</th>":""}<th>Assignment</th><th>Subject</th><th>Due</th><th>Reason</th><th>Who</th><th>Decided</th><th></th></tr></thead><tbody>
+    ${rows.map(r=>{const name=r.k?kidName(r.k):(r.w.student||"");const title=r.i?.title||r.w.assignment||r.key;const sub=r.k&&r.i?subj(r.k,r.i.sub)?.label:r.w.course;
+      const due=r.i?.due||r.w.due_date;const ok=r.kind==="wo";const note=ok?r.w.comment:r.w.note;
+      const who=ok?(r.w.by==="kid"?`${esc(name)} asked, you approved`:"You wrote it off"):`${esc(name)} asked, you said no`;
+      return `<tr>${tab==="family"?`<td>${esc(name)}</td>`:""}<td style="white-space:normal;min-width:160px"><b>${esc(title)}</b>${note?`<br><small style="color:var(--ink-soft)">“${esc(note)}”</small>`:""}</td>
+      <td>${esc(sub||"")}</td><td>${fmt(due)}</td><td>${REASON_SHORT[r.w.reason]||P.reasons[r.w.reason]||"Other"}</td><td>${who}</td><td>${fmt(String(r.w.written_off_at||r.w.decided_at||"").slice(0,10))}</td>
+      <td>${ok?`<span class="st wo">Written off</span> <button class="sbtn ghost" data-unwo="${esc(r.key)}">Undo</button>`:`<span class="st missing">Said no</span>`}</td></tr>`}).join("")}
+    </tbody></table></div>`:`<p class="sub">Nothing written off yet.</p>`}</section>`;
+}
+function rewardsPanel(){
+  const T=tiers(),n=teamStars(),pace=starPace(),next=T.find(t=>n<t.stars),perMonth=Math.round(pace*30/7);
+  const weeks=next&&pace>0?Math.ceil((next.stars-n)/pace):null;
+  return `<section class="panel"><h2>Team rewards</h2>
+    <p class="sub">All the kids fill one bar. This season started ${fmt(F().rewards.season_start)}.</p>
+    ${teamBar()}
+    <p style="font-weight:700;margin:6px 0 12px">Pace so far: about <b>${Math.round(pace)}</b> stars a week together (${perMonth} a month).${next&&weeks?` At this pace ${esc(next.reward)} unlocks in about <b>${weeks} week${weeks>1?"s":""}</b>.`:""}</p>
+    <div class="reqs">${T.map(t=>{const hit=n>=t.stars,used=redeemed(t.stars);
+      return `<div class="req" style="background:${used?"#EDEBF2":hit?"#FFF3C4":"#F7F5FF"}"><div class="rt">${t.stars} stars: ${esc(t.reward)}<small>${used?"Cashed in":hit?"Unlocked, ready to cash in":`${t.stars-n} stars to go`}</small></div>
+        ${hit&&!used?`<button class="sbtn" data-redeem="${t.stars}">Mark as cashed in</button>`:""}</div>`}).join("")}</div>
+    <details style="margin-top:14px"><summary style="font-weight:800;cursor:pointer">Change reward levels</summary>
+      <div id="tier-edit" style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+      ${T.map((t,i)=>`<div class="row tier-row"><input class="field" style="flex:0 0 96px" type="number" min="1" step="5" id="ts-${i}" value="${t.stars}" aria-label="Stars"><span style="font-weight:800">stars for</span><input class="field" id="tr-${i}" maxlength="40" value="${esc(t.reward)}" aria-label="Reward"><button class="sbtn ghost" data-deltier="${i}">Remove</button></div>`).join("")}
+      </div>
+      <div class="row" style="margin-top:10px"><button class="sbtn ghost" id="addtier">Add a reward</button><button class="sbtn" id="savetiers">Save levels</button></div>
+      <p class="sub" style="margin-top:8px">The kids earn about ${perMonth} stars a month together, so levels about ${Math.max(10,Math.round(perMonth/10)*10)} stars apart unlock about once a month.</p>
+    </details>
+    <div class="row" style="margin-top:12px"><button class="sbtn ghost" id="newseason">Start a new season (bar back to 0)</button></div>
+  </section>`}
+function readTiers(){return [...document.querySelectorAll(".tier-row")].map((row,i)=>({stars:parseInt(document.getElementById("ts-"+i).value)||0,reward:document.getElementById("tr-"+i).value.trim()}))}
+function drill(k,sid){
+  const s=subj(k,sid),f=S.pfilter;
+  let list=k.items.filter(i=>i.sub===sid).sort((a,b)=>(b.due||"").localeCompare(a.due||""));
+  if(f==="missing")list=list.filter(i=>["missing","pend"].includes(stateOf(i)[0]));
+  else if(f==="major")list=list.filter(i=>i.cat==="major");
+  else if(f==="term")list=list.filter(i=>i.term===k.term);
+  else if(f==="low")list=list.filter(i=>i.score!=null&&i.score<70);
+  if(f!=="all")list=list.filter(i=>!i.ts);
+  return `<section class="drill" id="drill"><div class="row" style="justify-content:space-between"><h2>${esc(s.label)}: every assignment</h2><button class="sbtn ghost" id="drill-x">Close</button></div>
+    ${scoreChart(k,s,"Scores over time")}
+    <div class="filters">${[["all","All"],["term","This term"],["major","Tests and projects"],["low","Below 70"],["missing","Missing"]].map(([v,l])=>`<button data-pf="${v}" aria-pressed="${f===v}">${l}</button>`).join("")}</div>
+    <div class="tblwrap"><table class="ptable"><thead><tr><th>Due</th><th>Assignment</th><th>Term</th><th>Type</th><th class="num">Score</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.map((i,n)=>{const [sc,sl]=stateOf(i);const canWo=(sc==="missing"||sc==="pend")&&!i.ts;
+      return `<tr><td>${fmt(i.due)}</td><td style="white-space:normal;min-width:180px">${esc(i.title)}${i.ts?' <small style="color:var(--ink-soft)">(teacher-scored)</small>':""}</td><td>${esc(i.term)}</td><td>${i.cat==="major"?"Test/project":i.cat==="minor"?"Daily":"–"}</td>
+      <td class="num">${i.score==null?"–":`<span class="gp ${gcls(i.score)}">${R(i.score)}</span>`}</td><td><span class="st ${sc}">${sl}</span></td>
+      <td>${canWo?`<select class="mini-sel" id="wr-${n}" aria-label="Write-off reason">${Object.entries(REASON_SHORT).map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select> <button class="sbtn" data-wo="${esc(i.key)}" data-wr="wr-${n}">Write off</button>`
+        :sc==="wo"?`<button class="sbtn ghost" data-unwo="${esc(i.key)}">Undo</button>`:""}</td></tr>`}).join("")||`<tr><td colspan="7">Nothing matches.</td></tr>`}
+    </tbody></table></div></section>`;
+}
+
+/* ---------- Events ---------- */
+app.addEventListener("click",async e=>{
+  const t=e.target.closest("button,tr[data-psub]");if(!t)return;
+  const d=t.dataset;
+  if(d.pick){S.kid=d.pick;local.set("kid",S.kid);render();window.scrollTo(0,0);return}
+  if(d.claim){claim(d.claim);return}
+  if(d.cant){cantDo(d.cant);return}
+  if(d.unclaim){if(await api("/api/unclaim",{key:d.unclaim}))render();return}
+  if(d.unask){if(await api("/api/request/cancel",{key:d.unask}))render();return}
+  if(d.creature){openCreature(d.creature);return}
+  if(d.ptab){S.ptab=d.ptab;S.psub=null;S.pfilter="all";render();return}
+  if(d.psub){S.psub=d.psub;S.pfilter="all";render();document.getElementById("drill")?.scrollIntoView({behavior:"smooth",block:"start"});return}
+  if(d.pf){S.pfilter=d.pf;render();return}
+  if(d.approve){if(await api("/api/request/decide",{key:d.approve,approve:true})){toast("Written off. It's off their list.");render()}return}
+  if(d.decline){if(await api("/api/request/decide",{key:d.decline,approve:false})){toast("Back on their list");render()}return}
+  if(d.wo){if(await api("/api/writeoffs",{key:d.wo,reason:document.getElementById(d.wr).value})){toast("Written off");render()}return}
+  if(d.unwo){if(await api("/api/writeoffs/remove",{key:d.unwo})){toast("Back on the list");render()}return}
+  if(d.redeem){if(await api("/api/rewards/redeem",{stars:+d.redeem})){toast("Cashed in. Enjoy!");confetti();render()}return}
+  if(d.deltier){const T=readTiers();T.splice(+d.deltier,1);if(await api("/api/rewards/tiers",{tiers:T}))render();return}
+  switch(t.id){
+    case"swap":S.kid=null;local.set("kid",null);render();break;
+    case"snd":S.muted=!S.muted;local.set("muted",S.muted);render();break;
+    case"done":recap();break;
+    case"friday":friday();break;
+    case"parent":P.parent?openParent():pinPad();break;
+    case"profile":openProfile();break;
+    case"lock":await api("/api/parent/lock");S.view="kid";S.kid=null;local.set("kid",null);render();window.scrollTo(0,0);break;
+    case"drill-x":S.psub=null;render();break;
+    case"savetiers":if(await api("/api/rewards/tiers",{tiers:readTiers()})){toast("Reward levels saved");render()}break;
+    case"addtier":{const T=readTiers();const top=Math.max(0,...T.map(x=>x.stars));T.push({stars:top+100,reward:"New reward"});if(await api("/api/rewards/tiers",{tiers:T}))render();break}
+    case"newseason":if(t.dataset.sure){if(await api("/api/rewards/new-season")){toast("New season started");render()}}else{t.dataset.sure="1";t.textContent="Tap again to reset the bar to 0"}break;
+  }
+});
+app.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("tr[data-psub]"))e.target.click()});
+/* Pick up new grades and other family members' taps when the page comes back into view. */
+document.addEventListener("visibilitychange",async()=>{if(document.visibilityState!=="visible"||layer.innerHTML)return;
+  try{const r=await fetch("/api/kids",{credentials:"same-origin"});if(r.ok){P=await r.json();if(!P.parent&&S.view==="parent")S.view="kid";render()}}catch(e){}});
+render();
+
+</script>
+</body>
+</html>

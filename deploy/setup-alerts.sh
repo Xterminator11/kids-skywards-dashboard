@@ -26,7 +26,7 @@ fi
 # shellcheck disable=SC1090
 [ -f "$CONF" ] && source "$CONF"
 HTTP_PORT="$(grep '^HTTP_PORT=' .env 2>/dev/null | tail -1 | cut -d= -f2- | tr -d "'\"" || true)"
-HTTP_PORT="${HTTP_PORT:-80}"
+HTTP_PORT="${HTTP_PORT:-8787}"
 
 echo "Phone numbers use the +1 format, e.g. +15125550123. Separate several with commas."
 read -rp "iMessage to (Apple devices) [${IMESSAGE_TO:-}]: " a; IMESSAGE_TO="${a:-${IMESSAGE_TO:-}}"
